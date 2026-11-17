@@ -1197,8 +1197,10 @@ end
 function GraphicBackground:apply_settings()
     local state = Appearance.state.background
     if self._root then self._root.Visible = state.enabled ~= false end
-    local particleFolder = self._particles
-    if particleFolder then particleFolder.Visible = state.particles ~= false end
+    local particlesEnabled = state.particles ~= false
+    for _, part in ipairs(self._parts) do
+        part.obj.Visible = particlesEnabled
+    end
     if self._container then
         self._container.BackgroundTransparency = Appearance.state.surface or 0.12
     end
@@ -1207,7 +1209,7 @@ function GraphicBackground:apply_settings()
     end
     local count = math.clamp(math.floor(#self._parts * (state.density or 1)), 0, #self._parts)
     for index, part in ipairs(self._parts) do
-        part.obj.Visible = index <= count
+        part.obj.Visible = particlesEnabled and index <= count
     end
 end
 

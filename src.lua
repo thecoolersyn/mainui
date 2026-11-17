@@ -1626,7 +1626,7 @@ function Library:create_ui()
     Tabs.Parent = Handler
     
     local UIListLayout = Instance.new('UIListLayout')
-    UIListLayout.Padding = UDim.new(0, 4)
+    UIListLayout.Padding = UDim.new(0, 2)
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Parent = Tabs
     
@@ -1634,9 +1634,9 @@ function Library:create_ui()
     ClientName.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     ClientName.TextColor3 = Theme.accent
     ClientName.TextTransparency = 0.20000000298023224
-    ClientName.Text = 'March'
+    ClientName.Text = 'Zenthra'
     ClientName.Name = 'ClientName'
-    ClientName.Size = UDim2.new(0, 31, 0, 13)
+    ClientName.Size = UDim2.new(0, 64, 0, 13)
     ClientName.AnchorPoint = Vector2.new(0, 0.5)
     ClientName.Position = UDim2.new(0.0560000017285347, 0, 0.054999999701976776, 0)
     ClientName.BackgroundTransparency = 1
@@ -1653,7 +1653,39 @@ function Library:create_ui()
         ColorSequenceKeypoint.new(1, Theme.text)
     }
     UIGradient.Parent = ClientName
-    
+
+    local ClientSub = Instance.new('TextLabel')
+    ClientSub.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+    ClientSub.TextColor3 = Theme.muted
+    ClientSub.TextTransparency = 0.45
+    ClientSub.Text = 'Blade Ball'
+    ClientSub.Name = 'ClientSub'
+    ClientSub.Size = UDim2.new(0, 58, 0, 12)
+    ClientSub.AnchorPoint = Vector2.new(0, 0.5)
+    ClientSub.Position = UDim2.new(0.133, 0, 0.055, 0)
+    ClientSub.BackgroundTransparency = 1
+    ClientSub.TextXAlignment = Enum.TextXAlignment.Left
+    ClientSub.BorderSizePixel = 0
+    ClientSub.TextSize = 9
+    ClientSub.Parent = Handler
+
+    local SearchBox = Instance.new('TextBox')
+    SearchBox.Name = 'Search'
+    SearchBox.PlaceholderText = 'Search'
+    SearchBox.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+    SearchBox.TextColor3 = Theme.text
+    SearchBox.TextSize = 10
+    SearchBox.BackgroundColor3 = Theme.secondary
+    SearchBox.BackgroundTransparency = 0.35
+    SearchBox.BorderSizePixel = 0
+    SearchBox.ClearTextOnFocus = false
+    SearchBox.Size = UDim2.fromOffset(150, 22)
+    SearchBox.Position = UDim2.new(1, -180, 0, 16)
+    SearchBox.Parent = Handler
+    local SearchCorner = Instance.new('UICorner')
+    SearchCorner.CornerRadius = UDim.new(0, 4)
+    SearchCorner.Parent = SearchBox
+
     local Pin = Instance.new('Frame')
     Pin.Name = 'Pin'
     Pin.Position = UDim2.new(0.026000000536441803, 0, 0.13600000739097595, 0)
@@ -1841,7 +1873,7 @@ function Library:create_ui()
 
             if object == tab then
                 if object.BackgroundTransparency ~= 0.5 then
-                    local offset = object.LayoutOrder * (0.113 / 1.3)
+                    local offset = object.LayoutOrder * 0.0752
 
                     TweenService:Create(Pin, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         Position = UDim2.fromScale(0.026, 0.135 + offset)
@@ -1925,7 +1957,7 @@ function Library:create_ui()
         Tab.AutoButtonColor = false
         Tab.BackgroundTransparency = 1
         Tab.Name = 'Tab'
-        Tab.Size = UDim2.new(0, 129, 0, 38)
+        Tab.Size = UDim2.new(0, 129, 0, 34)
         Tab.BorderSizePixel = 0
         Tab.TextSize = 14
         Tab.BackgroundColor3 = Theme.secondary

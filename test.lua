@@ -1,21 +1,25 @@
---[[
-    Zenthra "Pure Black" UI recreation (reference: ref/image.png)
-    Built on the March library in src.lua. Loaded by main.lua from GitHub.
-]]
-
 tablein = tablein or table.insert
 
 local Library = getgenv().MAINUI_LIBRARY or require(script.Parent.src)
 local TweenService = game:GetService("TweenService")
 local UI = Library.new()
 
--- The library expects an Image asset for each tab icon.
-local ICON = "rbxassetid://107819132007001"
-local ICON_ALT = "rbxassetid://79095934438045"
+local ICONS = {
+    Combat     = "rbxassetid://10734975486",
+    Detections = "rbxassetid://10734951847",
+    Visuals    = "rbxassetid://10723346959",
+    Player     = "rbxassetid://10747373176",
+    Sword      = "rbxassetid://10734909540",
+    Avatar     = "rbxassetid://10747373426",
+    World      = "rbxassetid://10723404337",
+    Blatant    = "rbxassetid://10734962068",
+    Misc       = "rbxassetid://10734950309",
+    Configs    = "rbxassetid://10723387563",
+    Gui        = "rbxassetid://10709781717"
+}
 
 local function noop() end
 
--- Pre-seed the flags so the toggles match the reference's on/off pattern.
 do
     local flags = Library._config._flags
     flags.z_compact = true
@@ -26,19 +30,14 @@ do
     flags.z_theme = "Pure Black"
 end
 
--- ---------------------------------------------------------------------------
--- Navigation (order and names match the reference sidebar)
--- ---------------------------------------------------------------------------
 local TABS = { "Combat", "Detections", "Visuals", "Player", "Sword",
                "Avatar", "World", "Blatant", "Misc", "Configs", "Gui" }
 
 local tabs = {}
-for i, name in ipairs(TABS) do
-    tabs[name] = UI:create_tab(name, (i % 2 == 0) and ICON or ICON_ALT)
+for _, name in ipairs(TABS) do
+    tabs[name] = UI:create_tab(name, ICONS[name])
 end
 
--- The reference has "Gui" selected, even though it is the last tab.
--- create_tab returns a manager, so resolve the actual button by its label.
 local guiTab
 do
     local tabContainer = UI._ui.Container.Handler.Tabs
@@ -60,8 +59,6 @@ local function activateGui()
             local active = (object == guiTab)
             local info = TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 
-            -- Tween (not assign) so the library's first-tab activation tween
-            -- cannot overwrite the final state after this function returns.
             TweenService:Create(object, info, {
                 BackgroundTransparency = active and 0.5 or 1
             }):Play()
@@ -101,9 +98,6 @@ activateGui()
 
 local gui = tabs.Gui
 
--- ---------------------------------------------------------------------------
--- Interface — window behavior
--- ---------------------------------------------------------------------------
 local interface = gui:create_module({
     title = "Interface",
     description = "Window behavior",
@@ -138,9 +132,6 @@ interface:create_feature({
     button_callback = noop
 })
 
--- ---------------------------------------------------------------------------
--- Notifications — toast position + previews
--- ---------------------------------------------------------------------------
 local notifications = gui:create_module({
     title = "Notifications",
     description = "Where toast appear",
@@ -160,9 +151,6 @@ notifications:create_dropdown({
 notifications:create_text({ text = "Preview", CustomYSize = 26, customScale = 38 })
 notifications:create_text({ text = "Preview (Content)", CustomYSize = 26, customScale = 38 })
 
--- ---------------------------------------------------------------------------
--- Appearance — theme + colors
--- ---------------------------------------------------------------------------
 local appearance = gui:create_module({
     title = "Appearance",
     description = "Customize the menu colors",
@@ -189,9 +177,6 @@ appearance:create_dropdown({
 appearance:create_text({ text = "Main color", CustomYSize = 22, customScale = 32 })
 appearance:create_text({ text = "Secondary",  CustomYSize = 22, customScale = 32 })
 
--- ---------------------------------------------------------------------------
--- Background — media layer
--- ---------------------------------------------------------------------------
 local background = gui:create_module({
     title = "Background",
     description = "Image, GIF or video behind the menu",
@@ -222,15 +207,10 @@ background:create_slider({
     callback = noop
 })
 
--- ---------------------------------------------------------------------------
--- Expand every module so the cards look like the reference (fully open).
--- ---------------------------------------------------------------------------
 for _, manager in ipairs({ interface, notifications, appearance, background }) do
     pcall(function() manager:change_state(true) end)
 end
 
--- Keep the reference's clean rows: hide the library's per-checkbox keybind
--- boxes and the module-header keybind chips, but keep the "Toggle key" chip.
 for _, object in ipairs(UI._ui:GetDescendants()) do
     if object.Name == "KeybindBox" and object:IsA("Frame") and object.Parent then
         object.Visible = false
@@ -241,7 +221,6 @@ for _, object in ipairs(UI._ui:GetDescendants()) do
         object.Size = UDim2.fromOffset(70, 15)
     elseif object:IsA("ImageLabel") and object.Name == "Icon"
         and object.Parent and object.Parent.Name == "Header" then
-        -- Zenthra card headers have no leading icon.
         object.Visible = false
     end
 end

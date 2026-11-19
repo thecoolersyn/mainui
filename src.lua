@@ -325,15 +325,10 @@ local Config = setmetatable({
     end
 }, Config)
 
--- ========================================================================= --
---  PURE BLACK ACCENT SYSTEM                                                  --
---  One shared update loop for the window sweep and the two header lines.     --
---  White is the pure-black theme accent, as in the reference screenshot.     --
--- ========================================================================= --
 local Accent = {
     Enabled   = true,
-    Color     = Color3.fromRGB(246, 246, 249), -- Zenthra bb_theme_accent
-    BaseColor = Color3.fromRGB(40, 40, 46),    -- Zenthra bb_theme_border
+    Color     = Color3.fromRGB(246, 246, 249),
+    BaseColor = Color3.fromRGB(40, 40, 46),
     Speed     = 2.0,
     Glow      = 0.25
 }
@@ -355,7 +350,6 @@ local accentConnection = nil
 local function accentGradient()
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new(Accent.Color, Accent.Color)
-    -- Soft fade at both ends: the Zenthra highlight is a gradient, not a
     -- hard-edged bar. Peak alpha ~0.78 keeps it bright without looking neon.
     gradient.Transparency = NumberSequence.new({
         NumberSequenceKeypoint.new(0, 1),
@@ -428,7 +422,6 @@ function Accent.Shutdown()
     table.clear(AccentTracks)
 end
 
--- Thin horizontal separator: dark static line with one accent sweep.
 local function createAccentLine(parent, position, width, name)
     local clip = Instance.new("Frame")
     clip.Name = name
@@ -465,83 +458,43 @@ local function createAccentLine(parent, position, width, name)
     end)
 end
 
--- Window perimeter: static dark outline plus one highlight travelling around
--- all four sides. Zero-sized overlay so it never disturbs a UIListLayout.
-local function createAccentBorder(object)
-    local overlay = Instance.new("Frame")
-    overlay.Name = "AccentPerimeter"
-    overlay.Size = UDim2.fromOffset(0, 0)
-    overlay.BackgroundTransparency = 1
-    overlay.BorderSizePixel = 0
-    overlay.Parent = object
+local function createAccentBorder(object, thickness)
+    local base = object:FindFirstChild("BaseOutline") or Instance.new("UIStroke")
+    base.Name = "BaseOutline"
+    base.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    base.Color = Accent.BaseColor
+    base.Transparency = 0.45
+    base.Thickness = thickness or 1
+    base.Parent = object
 
-    local edges = {}
-    local function addEdge(name, horizontal, reverse)
-        local holder = Instance.new("Frame")
-        holder.Name = name
-        holder.BackgroundTransparency = 1
-        holder.BorderSizePixel = 0
-        holder.ClipsDescendants = true
-        holder.Parent = overlay
+    local stroke = object:FindFirstChild("AccentOutline") or Instance.new("UIStroke")
+    stroke.Name = "AccentOutline"
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Color = Accent.Color
+    stroke.Transparency = 0
+    stroke.Thickness = thickness or 1
+    stroke.Parent = object
 
-        local base = Instance.new("Frame")
-        base.Size = UDim2.fromScale(1, 1)
-        base.BackgroundColor3 = Accent.BaseColor
-        base.BackgroundTransparency = 0.5
-        base.BorderSizePixel = 0
-        base.Parent = holder
-
-        local seg = Instance.new("Frame")
-        seg.Name = "Segment"
-        seg.BackgroundColor3 = Accent.Color
-        seg.BackgroundTransparency = 0
-        seg.BorderSizePixel = 0
-        seg.Parent = holder
-        accentGradient().Parent = seg
-
-        edges[#edges + 1] = { holder = holder, seg = seg, horizontal = horizontal, reverse = reverse }
-    end
-
-    addEdge("Top", true, false)
-    addEdge("Right", false, false)
-    addEdge("Bottom", true, true)
-    addEdge("Left", false, true)
+    local gradient = stroke:FindFirstChild("AccentGradient") or Instance.new("UIGradient")
+    gradient.Name = "AccentGradient"
+    gradient.Color = ColorSequence.new(Accent.Color, Accent.Color)
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.38, 1),
+        NumberSequenceKeypoint.new(0.47, 0.4),
+        NumberSequenceKeypoint.new(0.5, 0.22),
+        NumberSequenceKeypoint.new(0.53, 0.4),
+        NumberSequenceKeypoint.new(0.62, 1),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    gradient.Parent = stroke
+    AccentGradients[gradient] = true
 
     accentRegister(object, function(t)
-        local w, h = object.AbsoluteSize.X, object.AbsoluteSize.Y
-        if w < 4 or h < 4 then return end
-
-        edges[1].holder.Position = UDim2.fromOffset(0, 0)
-        edges[1].holder.Size = UDim2.fromOffset(w, 2)
-        edges[2].holder.Position = UDim2.fromOffset(w - 2, 0)
-        edges[2].holder.Size = UDim2.fromOffset(2, h)
-        edges[3].holder.Position = UDim2.fromOffset(0, h - 2)
-        edges[3].holder.Size = UDim2.fromOffset(w, 2)
-        edges[4].holder.Position = UDim2.fromOffset(0, 0)
-        edges[4].holder.Size = UDim2.fromOffset(2, h)
-
-        local perimeter = 2 * (w + h)
-        local length = math.clamp(math.min(w, h) * 0.35, 50, 130)
-        local p = t * perimeter
-
-        local function place(edge, span, start)
-            local delta = (p - start) % perimeter
-            local pos = edge.reverse and (span - delta) or (delta - length)
-
-            if edge.horizontal then
-                edge.seg.Size = UDim2.fromOffset(length, 1)
-                edge.seg.Position = UDim2.new(0, pos, 0.5, -0.5)
-            else
-                edge.seg.Size = UDim2.fromOffset(1, length)
-                edge.seg.Position = UDim2.new(0.5, -0.5, 0, pos)
-            end
-        end
-
-        place(edges[1], w, 0)
-        place(edges[2], h, w)
-        place(edges[3], w, w + h)
-        place(edges[4], h, 2 * w + h)
+        gradient.Rotation = (t * 360) % 360
     end)
+
+    return stroke
 end
 
 local Library = {
@@ -1206,7 +1159,6 @@ function Library:create_ui()
     Container.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Container.AnchorPoint = Vector2.new(0.5, 0.5)
     Container.Name = 'Container'
-    -- Exact Zenthra "Pure Black" theme values from the game config.
     Container.BackgroundTransparency = 0
     Container.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
     Container.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1219,12 +1171,6 @@ function Library:create_ui()
     UICorner.CornerRadius = UDim.new(0, 10)
     UICorner.Parent = Container
     
-    local UIStroke = Instance.new('UIStroke')
-    UIStroke.Color = Accent.BaseColor
-    UIStroke.Transparency = 0.4
-    UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    UIStroke.Parent = Container
-
     createAccentBorder(Container)
 
     -- Custom background: separate rendering layer behind the Handler.
@@ -1259,7 +1205,6 @@ function Library:create_ui()
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Parent = Tabs
     
-    -- Zenthra branding: bold title, muted subtitle and white title underline.
     local ClientName = Instance.new('TextLabel')
     ClientName.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     ClientName.TextColor3 = Color3.fromRGB(246, 246, 249)
@@ -1336,16 +1281,27 @@ function Library:create_ui()
     Divider.BackgroundColor3 = Accent.BaseColor
     Divider.Parent = Handler
 
-    -- Two header lines: branding -> navigation (sidebar), then the
-    -- header/topbar -> module content boundary (full width).
     createAccentLine(Handler, UDim2.new(0.026, 0, 0.088, 0), 140, 'BrandSeparator')
     createAccentLine(Handler, UDim2.new(0.026, 0, 0.11, 0), 660, 'ContentSeparator')
     
+    local ContentContainer = Instance.new('Frame')
+    ContentContainer.Name = 'ContentContainer'
+    ContentContainer.Position = UDim2.fromOffset(170, 60)
+    ContentContainer.Size = UDim2.fromOffset(520, 410)
+    ContentContainer.BackgroundTransparency = 1
+    ContentContainer.BorderSizePixel = 0
+    ContentContainer.Parent = Handler
+
+    local ContentCorner = Instance.new('UICorner')
+    ContentCorner.CornerRadius = UDim.new(0, 6)
+    ContentCorner.Parent = ContentContainer
+
+    createAccentBorder(ContentContainer)
+
     local Sections = Instance.new('Folder')
     Sections.Name = 'Sections'
     Sections.Parent = Handler
     
-    -- Zenthra header search field.
     local SearchFrame = Instance.new('Frame')
     SearchFrame.Name = 'SearchFrame'
     SearchFrame.Position = UDim2.fromOffset(440, 17)
@@ -1365,13 +1321,11 @@ function Library:create_ui()
     SearchStroke.Thickness = 1
     SearchStroke.Parent = SearchFrame
 
-    local SearchIcon = Instance.new('TextLabel')
-    SearchIcon.Text = '⌕'
-    SearchIcon.Font = Enum.Font.SourceSans
-    SearchIcon.TextSize = 16
-    SearchIcon.TextColor3 = Color3.fromRGB(136, 136, 144)
-    SearchIcon.Size = UDim2.fromOffset(16, 25)
-    SearchIcon.Position = UDim2.fromOffset(6, 0)
+    local SearchIcon = Instance.new('ImageLabel')
+    SearchIcon.Image = 'rbxassetid://10734943674'
+    SearchIcon.ImageColor3 = Color3.fromRGB(136, 136, 144)
+    SearchIcon.Size = UDim2.fromOffset(12, 12)
+    SearchIcon.Position = UDim2.fromOffset(8, 7)
     SearchIcon.BackgroundTransparency = 1
     SearchIcon.Parent = SearchFrame
 
@@ -1405,7 +1359,6 @@ function Library:create_ui()
     Minimize.Parent = Handler
     
     local UIScale = Instance.new('UIScale')
-    -- Reference window is 622x432 on a 698x479 layout.
     UIScale.Scale = 622 / 698
     UIScale.Parent = Container    
     
@@ -1456,7 +1409,6 @@ function Library:create_ui()
             self.BackgroundManager = nil
         end
 
-        -- Accent tracks self-prune with their elements; the shared driver
         -- disconnects itself when the final track disappears.
         self._ui = nil
         Connections:disconnect_all()
@@ -1788,7 +1740,6 @@ function Library:create_ui()
             Header.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Header.Parent = Module
 
-            -- Zenthra card signature: a bright accent sweep along the top edge.
             createAccentLine(Header, UDim2.new(0, 0, 0, 2), 241, 'ModuleSweep')
             
             local Icon = Instance.new('ImageLabel')

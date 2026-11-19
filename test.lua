@@ -6,6 +6,7 @@
 tablein = tablein or table.insert
 
 local Library = getgenv().MAINUI_LIBRARY or require(script.Parent.src)
+local TweenService = game:GetService("TweenService")
 local UI = Library.new()
 
 -- The library expects an Image asset for each tab icon.
@@ -57,23 +58,35 @@ local function activateGui()
     for _, object in ipairs(handler.Tabs:GetChildren()) do
         if object.Name == "Tab" then
             local active = (object == guiTab)
-            object.BackgroundTransparency = active and 0.5 or 1
+            local info = TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+
+            -- Tween (not assign) so the library's first-tab activation tween
+            -- cannot overwrite the final state after this function returns.
+            TweenService:Create(object, info, {
+                BackgroundTransparency = active and 0.5 or 1
+            }):Play()
 
             local label = object:FindFirstChild("TextLabel")
             if label then
-                label.TextTransparency = active and 0.2 or 0.7
-                label.TextColor3 = active
-                    and Color3.fromRGB(246, 246, 249)
-                    or Color3.fromRGB(255, 255, 255)
+                TweenService:Create(label, info, {
+                    TextTransparency = active and 0.2 or 0.7,
+                    TextColor3 = active
+                        and Color3.fromRGB(246, 246, 249)
+                        or Color3.fromRGB(255, 255, 255)
+                }):Play()
             end
 
             local icon = object:FindFirstChild("Icon")
             if icon then
-                icon.ImageTransparency = active and 0.2 or 0.8
+                TweenService:Create(icon, info, {
+                    ImageTransparency = active and 0.2 or 0.8
+                }):Play()
             end
 
             if active then
-                pin.Position = UDim2.fromScale(0.026, 0.135 + object.LayoutOrder * (0.113 / 1.3))
+                TweenService:Create(pin, info, {
+                    Position = UDim2.fromScale(0.026, 0.135 + object.LayoutOrder * (0.113 / 1.3))
+                }):Play()
             end
         end
     end

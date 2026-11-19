@@ -349,7 +349,24 @@ local function accentDim()
 end
 
 local AccentTracks = {}
+local AccentGradients = setmetatable({}, { __mode = "k" })
 local accentConnection = nil
+
+local function accentGradient()
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new(Accent.Color, Accent.Color)
+    -- Soft fade at both ends: the Zenthra highlight is a gradient, not a
+    -- hard-edged bar. Peak alpha ~0.78 keeps it bright without looking neon.
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.25, 0.5),
+        NumberSequenceKeypoint.new(0.5, 0.22),
+        NumberSequenceKeypoint.new(0.75, 0.5),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    AccentGradients[gradient] = true
+    return gradient
+end
 
 local function accentStart()
     if accentConnection or not Accent.Enabled then
@@ -382,7 +399,11 @@ local function accentRegister(object, update)
 end
 
 function Accent.SetColor(color)
-    if typeof(color) == "Color3" then Accent.Color = color end
+    if typeof(color) ~= "Color3" then return end
+    Accent.Color = color
+    for gradient in pairs(AccentGradients) do
+        gradient.Color = ColorSequence.new(color, color)
+    end
 end
 
 function Accent.SetSpeed(seconds)
@@ -423,37 +444,24 @@ local function createAccentLine(parent, position, width, name)
     base.Size = UDim2.new(1, 0, 0, 1)
     base.Position = UDim2.new(0, 0, 0.5, -0.5)
     base.BackgroundColor3 = Accent.BaseColor
-    base.BackgroundTransparency = 0.35
+    base.BackgroundTransparency = 0.5
     base.BorderSizePixel = 0
     base.Parent = clip
 
-    local glow = Instance.new("Frame")
-    glow.Name = "Glow"
-    glow.Size = UDim2.fromOffset(math.floor(width * 0.35), 5)
-    glow.BackgroundColor3 = Accent.Color
-    glow.BackgroundTransparency = 0.9
-    glow.BorderSizePixel = 0
-    glow.Parent = clip
-
     local segment = Instance.new("Frame")
     segment.Name = "Segment"
-    segment.Size = UDim2.new(0, glow.Size.X.Offset, 0, 1)
+    segment.Size = UDim2.fromOffset(math.max(40, math.floor(width * 0.6)), 1)
     segment.Position = UDim2.new(0, 0, 0.5, -0.5)
     segment.BackgroundColor3 = Accent.Color
-    segment.BackgroundTransparency = 0.1
+    segment.BackgroundTransparency = 0
     segment.BorderSizePixel = 0
     segment.Parent = clip
+    accentGradient().Parent = segment
 
     accentRegister(clip, function(t)
         local length = segment.Size.X.Offset
-        -- Keep the highlight on-screen for most of the loop so the sweep is
-        -- continuously visible instead of disappearing off both ends.
         local x = -length * 0.5 + t * (width + length)
-        local fade = math.clamp(math.min((x + length) / length, (width - x) / length), 0, 1)
         segment.Position = UDim2.new(0, x, 0.5, -0.5)
-        segment.BackgroundTransparency = 1 - fade * 0.92
-        glow.Position = UDim2.new(0, x - length * 0.25, 0, 0)
-        glow.BackgroundTransparency = 1 - fade * (0.1 + Accent.Glow * 0.25)
     end)
 end
 
@@ -479,25 +487,19 @@ local function createAccentBorder(object)
         local base = Instance.new("Frame")
         base.Size = UDim2.fromScale(1, 1)
         base.BackgroundColor3 = Accent.BaseColor
-        base.BackgroundTransparency = 0.3
+        base.BackgroundTransparency = 0.5
         base.BorderSizePixel = 0
         base.Parent = holder
-
-        local glow = Instance.new("Frame")
-        glow.Name = "Glow"
-        glow.BackgroundColor3 = Accent.Color
-        glow.BackgroundTransparency = 0.9
-        glow.BorderSizePixel = 0
-        glow.Parent = holder
 
         local seg = Instance.new("Frame")
         seg.Name = "Segment"
         seg.BackgroundColor3 = Accent.Color
-        seg.BackgroundTransparency = 0.1
+        seg.BackgroundTransparency = 0
         seg.BorderSizePixel = 0
         seg.Parent = holder
+        accentGradient().Parent = seg
 
-        edges[#edges + 1] = { holder = holder, glow = glow, seg = seg, horizontal = horizontal, reverse = reverse }
+        edges[#edges + 1] = { holder = holder, seg = seg, horizontal = horizontal, reverse = reverse }
     end
 
     addEdge("Top", true, false)
@@ -525,20 +527,13 @@ local function createAccentBorder(object)
         local function place(edge, span, start)
             local delta = (p - start) % perimeter
             local pos = edge.reverse and (span - delta) or (delta - length)
-            local fade = math.clamp(math.min(delta, span - delta) / (length * 0.9), 0, 1)
-            edge.seg.BackgroundTransparency = 1 - fade * 0.9
-            edge.glow.BackgroundTransparency = 1 - fade * (0.1 + Accent.Glow * 0.2)
 
             if edge.horizontal then
                 edge.seg.Size = UDim2.fromOffset(length, 1)
                 edge.seg.Position = UDim2.new(0, pos, 0.5, -0.5)
-                edge.glow.Size = UDim2.fromOffset(length * 1.4, 3)
-                edge.glow.Position = UDim2.new(0, pos - length * 0.2, 0.5, -1.5)
             else
                 edge.seg.Size = UDim2.fromOffset(1, length)
                 edge.seg.Position = UDim2.new(0.5, -0.5, 0, pos)
-                edge.glow.Size = UDim2.fromOffset(3, length * 1.4)
-                edge.glow.Position = UDim2.new(0.5, -1.5, 0, pos - length * 0.2)
             end
         end
 

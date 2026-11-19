@@ -989,7 +989,7 @@ function Library:create_background_settings(module)
         btn.Text = title
         btn.TextSize = 10
         btn.TextColor3 = Color3.fromRGB(210, 210, 210)
-        btn.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+        btn.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
         btn.BackgroundTransparency = 0.1
         btn.BorderSizePixel = 0
         btn.AutoButtonColor = false
@@ -1071,7 +1071,7 @@ function Library.SendNotification(settings)
     local InnerFrame = Instance.new("Frame")
     InnerFrame.Size = UDim2.new(1, 0, 0, 60)  -- Start with an initial height, width will adapt
     InnerFrame.Position = UDim2.new(0, 0, 0, 0)  -- Positioned inside the outer notification frame
-    InnerFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+    InnerFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
     InnerFrame.BackgroundTransparency = 0.1
     InnerFrame.BorderSizePixel = 0
     InnerFrame.Name = "InnerFrame"
@@ -1213,7 +1213,7 @@ function Library:create_ui()
     Container.Name = 'Container'
     -- Exact Zenthra "Pure Black" theme values from the game config.
     Container.BackgroundTransparency = 0
-    Container.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+    Container.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
     Container.Position = UDim2.new(0.5, 0, 0.5, 0)
     Container.Size = UDim2.new(0, 0, 0, 0)
     Container.Active = true
@@ -1410,6 +1410,8 @@ function Library:create_ui()
     Minimize.Parent = Handler
     
     local UIScale = Instance.new('UIScale')
+    -- Reference window is 622x432 on a 698x479 layout.
+    UIScale.Scale = 622 / 698
     UIScale.Parent = Container    
     
     self._ui = March
@@ -1624,7 +1626,7 @@ function Library:create_ui()
         Tab.Size = UDim2.new(0, 129, 0, 38)
         Tab.BorderSizePixel = 0
         Tab.TextSize = 14
-        Tab.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+        Tab.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
         Tab.Parent = Tabs
         Tab.LayoutOrder = self._tab
         
@@ -1760,7 +1762,7 @@ function Library:create_ui()
             Module.Name = 'Module'
             Module.Size = UDim2.new(0, 241, 0, 93)
             Module.BorderSizePixel = 0
-            Module.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+            Module.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
             Module.Parent = settings.section
 
             local UIListLayout = Instance.new('UIListLayout')
@@ -2129,7 +2131,7 @@ function Library:create_ui()
             
                 -- Container Frame
                 local Paragraph = Instance.new('Frame')
-                Paragraph.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+                Paragraph.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
                 Paragraph.BackgroundTransparency = 0.1
                 Paragraph.Size = UDim2.new(0, 207, 0, 30) -- Initial size, auto-resized later
                 Paragraph.BorderSizePixel = 0
@@ -2187,7 +2189,7 @@ function Library:create_ui()
             
                 Paragraph.MouseLeave:Connect(function()
                     TweenService:Create(Paragraph, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+                        BackgroundColor3 = Color3.fromRGB(32, 32, 32)
                     }):Play()
                 end)
 
@@ -2213,7 +2215,7 @@ function Library:create_ui()
             
                 -- Container Frame
                 local TextFrame = Instance.new('Frame')
-                TextFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+                TextFrame.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
                 TextFrame.BackgroundTransparency = 0.1
                 TextFrame.Size = UDim2.new(0, 207, 0, settings.CustomYSize) -- Initial size, auto-resized later
                 TextFrame.BorderSizePixel = 0
@@ -2257,7 +2259,7 @@ function Library:create_ui()
             
                 TextFrame.MouseLeave:Connect(function()
                     TweenService:Create(TextFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+                        BackgroundColor3 = Color3.fromRGB(32, 32, 32)
                     }):Play()
                 end)
 
@@ -3244,7 +3246,7 @@ function Library:create_ui()
                 FeatureButton.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal);
                 FeatureButton.TextSize = 11;
                 FeatureButton.Size = UDim2.new(1, -35, 0, 16)
-                FeatureButton.BackgroundColor3 = Color3.fromRGB(16, 16, 19)
+                FeatureButton.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
                 FeatureButton.TextColor3 = Color3.fromRGB(210, 210, 210)
                 FeatureButton.Text = "    " .. settings.title or "    " .. "Feature"
                 FeatureButton.AutoButtonColor = false
@@ -3311,7 +3313,7 @@ function Library:create_ui()
                 if not settings.disablecheck then
                     local Checkbox = Instance.new("TextButton")
                     Checkbox.Size = UDim2.new(0, 15, 0, 15)
-                    Checkbox.BackgroundColor3 = checked and accent() or Color3.fromRGB(16, 16, 19)
+                    Checkbox.BackgroundColor3 = checked and accent() or Color3.fromRGB(32, 32, 32)
                     Checkbox.Text = ""
                     Checkbox.Parent = RightContainer
                     Checkbox.LayoutOrder = 1;
@@ -3327,7 +3329,7 @@ function Library:create_ui()
             
                     local function toggleState()
                         checked = not checked
-                        Checkbox.BackgroundColor3 = checked and accent() or Color3.fromRGB(16, 16, 19)
+                        Checkbox.BackgroundColor3 = checked and accent() or Color3.fromRGB(32, 32, 32)
                         Library._config._flags[settings.flag].checked = checked
                         Config:save(game.GameId, Library._config)
                         if settings.callback then

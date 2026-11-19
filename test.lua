@@ -22,6 +22,7 @@ do
     flags.z_title_sweep = true
     flags.z_pill_sweep = true
     flags.z_bg_enabled = true
+    flags.z_theme = "Pure Black"
 end
 
 -- ---------------------------------------------------------------------------
@@ -36,7 +37,18 @@ for i, name in ipairs(TABS) do
 end
 
 -- The reference has "Gui" selected, even though it is the last tab.
-local guiTab = tabs.Gui
+-- create_tab returns a manager, so resolve the actual button by its label.
+local guiTab
+do
+    local tabContainer = UI._ui.Container.Handler.Tabs
+    for _, object in ipairs(tabContainer:GetChildren()) do
+        if object.Name == "Tab" and object:FindFirstChild("TextLabel")
+            and object.TextLabel.Text == "Gui" then
+            guiTab = object
+            break
+        end
+    end
+end
 
 local function activateGui()
     local handler = UI._ui.Container.Handler

@@ -3,13 +3,14 @@
     ----------------------------------------------------------------
     Load this single line in your executor:
 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/thecoolersyn/mainui/refs/heads/main/main.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/thecoolersyn/mainui/HEAD/main.lua"))()
 
     It fetches src.lua (the library) and test.lua (the demo UI) from the same
     GitHub repo and executes them in order.
 ]]
 
-local BASE = "https://raw.githubusercontent.com/thecoolersyn/mainui/refs/heads/main/"
+-- HEAD avoids the stale-cache entries created by the earlier refs/heads/main URLs.
+local BASE = "https://raw.githubusercontent.com/thecoolersyn/mainui/HEAD/"
 
 local function fetch(name)
     local ok, source = pcall(game.HttpGet, game, BASE .. name)

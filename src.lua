@@ -1853,7 +1853,7 @@ function Library:create_ui()
             Toggle.BackgroundTransparency = 0.1
             Toggle.Position = UDim2.new(0.8199999928474426, 0, 0.7570000290870667, 0)
             Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            Toggle.Size = UDim2.new(0, 25, 0, 12)
+            Toggle.Size = UDim2.fromOffset(30, 16)
             Toggle.BorderSizePixel = 0
             Toggle.BackgroundColor3 = Color3.fromRGB(46, 46, 46)
             Toggle.Parent = Header
@@ -2424,44 +2424,49 @@ function Library:create_ui()
                 Box.BackgroundTransparency = 0.9
                 Box.Position = UDim2.new(1, 0, 0.5, 0)
                 Box.Name = "Box"
-                Box.Size = UDim2.new(0, 15, 0, 15)
+                Box.Size = UDim2.fromOffset(30, 16)
                 Box.BorderSizePixel = 0
-                Box.BackgroundColor3 = accent()
+                Box.BackgroundColor3 = Color3.fromRGB(46, 46, 46)
                 Box.Parent = Checkbox
             
                 local BoxCorner = Instance.new("UICorner")
-                BoxCorner.CornerRadius = UDim.new(0, 4)
+                BoxCorner.CornerRadius = UDim.new(1, 0)
                 BoxCorner.Parent = Box
             
                 local Fill = Instance.new("Frame")
-                Fill.AnchorPoint = Vector2.new(0.5, 0.5)
-                Fill.BackgroundTransparency = 0.2
-                Fill.Position = UDim2.new(0.5, 0, 0.5, 0)
+                Fill.AnchorPoint = Vector2.new(0, 0.5)
+                Fill.BackgroundTransparency = 0.05
+                Fill.Position = UDim2.new(0, 2, 0.5, 0)
                 Fill.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Fill.Name = "Fill"
                 Fill.BorderSizePixel = 0
-                Fill.BackgroundColor3 = accent()
+                Fill.Size = UDim2.fromOffset(12, 12)
+                Fill.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
                 Fill.Parent = Box
             
                 local FillCorner = Instance.new("UICorner")
-                FillCorner.CornerRadius = UDim.new(0, 3)
+                FillCorner.CornerRadius = UDim.new(1, 0)
                 FillCorner.Parent = Fill
             
                 function CheckboxManager:change_state(state: boolean)
                     self._state = state
                     if self._state then
                         TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            BackgroundTransparency = 0.7
+                            BackgroundColor3 = accent(),
+                            BackgroundTransparency = 0.05
                         }):Play()
                         TweenService:Create(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(9, 9)
+                            Position = UDim2.new(0, 16, 0.5, 0),
+                            BackgroundColor3 = Color3.fromRGB(20, 20, 20)
                         }):Play()
                     else
                         TweenService:Create(Box, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            BackgroundTransparency = 0.9
+                            BackgroundColor3 = Color3.fromRGB(46, 46, 46),
+                            BackgroundTransparency = 0.05
                         }):Play()
                         TweenService:Create(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                            Size = UDim2.fromOffset(0, 0)
+                            Position = UDim2.new(0, 2, 0.5, 0),
+                            BackgroundColor3 = Color3.fromRGB(150, 150, 150)
                         }):Play()
                     end
                     Library._config._flags[settings.flag] = self._state

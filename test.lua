@@ -239,6 +239,10 @@ for _, object in ipairs(UI._ui:GetDescendants()) do
         object.Visible = false
     elseif object:IsA("TextLabel") and object.Text == "LeftControl" then
         object.Size = UDim2.fromOffset(70, 15)
+    elseif object:IsA("ImageLabel") and object.Name == "Icon"
+        and object.Parent and object.Parent.Name == "Header" then
+        -- Zenthra card headers have no leading icon.
+        object.Visible = false
     end
 end
 

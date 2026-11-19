@@ -85,7 +85,7 @@ local function activateGui()
 
             if active then
                 TweenService:Create(pin, info, {
-                    Position = UDim2.fromScale(0.026, 0.135 + object.LayoutOrder * (0.113 / 1.3))
+                    Position = UDim2.fromScale(0.026, 0.142 + object.LayoutOrder * 0.0626)
                 }):Play()
             end
         end

@@ -325,6 +325,24 @@ local Config = setmetatable({
     end
 }, Config)
 
+local Library = {
+    _config = Config:load(game.GameId),
+
+    _choosing_keybind = false,
+    _device = nil,
+
+    _ui_open = true,
+    _ui_scale = 1,
+    _ui_loaded = false,
+    _ui = nil,
+
+    _dragging = false,
+    _drag_start = nil,
+    _container_position = nil
+}
+Library.__index = Library
+
+
 -- ========================================================================= --
 --  CUSTOM BACKGROUND SUPPORT                                                --
 --  Adds a real, separate background rendering layer behind the existing UI.  --
@@ -773,22 +791,6 @@ end
 
 
 
-local Library = {
-    _config = Config:load(game.GameId),
-
-    _choosing_keybind = false,
-    _device = nil,
-
-    _ui_open = true,
-    _ui_scale = 1,
-    _ui_loaded = false,
-    _ui = nil,
-
-    _dragging = false,
-    _drag_start = nil,
-    _container_position = nil
-}
-Library.__index = Library
 
 
 function Library.new()

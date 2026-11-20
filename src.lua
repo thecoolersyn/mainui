@@ -1227,72 +1227,55 @@ function Library:create_ui()
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Parent = Tabs
     
-    local ClientName = Instance.new('TextLabel')
+    local ClientName = Instance.new('TextButton')
     ClientName.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     ClientName.TextColor3 = Theme.Text
     ClientName.TextTransparency = 0
     ClientName.Text = 'Zenthra'
     ClientName.Name = 'ClientName'
-    ClientName.Size = UDim2.fromOffset(72, 16)
+    ClientName.Size = UDim2.fromOffset(0, 16)
+    ClientName.AutomaticSize = Enum.AutomaticSize.X
     ClientName.AnchorPoint = Vector2.new(0, 0.5)
-    ClientName.Position = UDim2.fromOffset(38, 22)
+    ClientName.Position = UDim2.fromOffset(20, 21)
     ClientName.BackgroundTransparency = 1
     ClientName.TextXAlignment = Enum.TextXAlignment.Left
     ClientName.BorderSizePixel = 0
     ClientName.TextSize = 14
     ClientName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ClientName.AutoButtonColor = false
     ClientName.Parent = Handler
+
+    local font_params = Instance.new('GetTextBoundsParams')
+    font_params.Text = 'Zenthra'
+    font_params.Font = ClientName.FontFace
+    font_params.Size = 14
+    font_params.Width = 10000
+    local z_width = TextService:GetTextBoundsAsync(font_params).X
+
+    local TitleUnderline = Instance.new('Frame')
+    TitleUnderline.Name = 'TitleUnderline'
+    TitleUnderline.Size = UDim2.fromOffset(z_width, 1)
+    TitleUnderline.Position = UDim2.fromOffset(20, 35)
+    TitleUnderline.BackgroundColor3 = accent()
+    TitleUnderline.BackgroundTransparency = 0
+    TitleUnderline.BorderSizePixel = 0
+    TitleUnderline.Parent = Handler
 
     local SubTitle = Instance.new('TextLabel')
     SubTitle.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
     SubTitle.TextColor3 = Theme.TextDim
     SubTitle.Text = 'Blade Ball'
     SubTitle.Name = 'SubTitle'
-    SubTitle.Size = UDim2.fromOffset(70, 12)
+    SubTitle.Size = UDim2.fromOffset(0, 12)
+    SubTitle.AutomaticSize = Enum.AutomaticSize.X
     SubTitle.AnchorPoint = Vector2.new(0, 0.5)
-    SubTitle.Position = UDim2.fromOffset(110, 23)
+    SubTitle.Position = UDim2.new(0, 20 + z_width + 10, 0, 23)
     SubTitle.BackgroundTransparency = 1
     SubTitle.TextXAlignment = Enum.TextXAlignment.Left
     SubTitle.TextSize = 9
     SubTitle.BorderSizePixel = 0
     SubTitle.Parent = Handler
 
-    local TitleUnderline = Instance.new('Frame')
-    TitleUnderline.Name = 'TitleUnderline'
-    TitleUnderline.Size = UDim2.fromOffset(50, 1)
-    TitleUnderline.Position = UDim2.fromOffset(38, 36)
-    TitleUnderline.BackgroundColor3 = accent()
-    TitleUnderline.BackgroundTransparency = 0
-    TitleUnderline.BorderSizePixel = 0
-    TitleUnderline.Parent = Handler
-    
-    local Pin = Instance.new('Frame')
-    Pin.Name = 'Pin'
-    Pin.Position = UDim2.new(0.026, 0, 0.1257, 0)
-    Pin.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Pin.Size = UDim2.new(0, 2, 0, 16)
-    Pin.BorderSizePixel = 0
-    Pin.BackgroundColor3 = accent()
-    Pin.Parent = Handler
-    
-    local UICorner = Instance.new('UICorner')
-    UICorner.CornerRadius = UDim.new(1, 0)
-    UICorner.Parent = Pin
-    
-    local Icon = Instance.new('ImageLabel')
-    Icon.ImageColor3 = accent()
-    Icon.ScaleType = Enum.ScaleType.Fit
-    Icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Icon.AnchorPoint = Vector2.new(0, 0.5)
-    Icon.Image = 'rbxassetid://107819132007001'
-    Icon.BackgroundTransparency = 1
-    Icon.Position = UDim2.new(0.02500000037252903, 0, 0.054999999701976776, 0)
-    Icon.Name = 'Icon'
-    Icon.Size = UDim2.new(0, 18, 0, 18)
-    Icon.BorderSizePixel = 0
-    Icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Icon.Parent = Handler
-    
     local Divider = Instance.new('Frame')
     Divider.Name = 'Divider'
     Divider.BackgroundTransparency = 0.5
@@ -1344,7 +1327,7 @@ function Library:create_ui()
     SearchStroke.Parent = SearchFrame
 
     local SearchIcon = Instance.new('ImageLabel')
-    SearchIcon.Image = 'rbxassetid://10734943674'
+    SearchIcon.Image = 'https://raw.githubusercontent.com/thecoolersyn/mainui/main/assets/search.png'
     SearchIcon.ImageColor3 = Theme.TextDim
     SearchIcon.Size = UDim2.fromOffset(12, 12)
     SearchIcon.Position = UDim2.fromOffset(8, 7)
@@ -1379,7 +1362,12 @@ function Library:create_ui()
     Minimize.TextSize = 18
     Minimize.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Minimize.Parent = Handler
-    
+
+    ClientName.MouseButton1Click:Connect(function()
+        self._ui_open = not self._ui_open
+        self:change_visiblity(self._ui_open)
+    end)
+
     local UIScale = Instance.new('UIScale')
     UIScale.Scale = 622 / 698
     UIScale.Parent = Container    
@@ -1506,55 +1494,39 @@ function Library:create_ui()
                 continue
             end
 
+            local bar = object:FindFirstChild('TabBar')
+
             if object == tab then
-                if object.BackgroundTransparency ~= 0.5 then
-                    local offset = object.LayoutOrder * 0.0626
-
-                    TweenService:Create(Pin, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Position = UDim2.fromScale(0.026, 0.1257 + offset)
-                    }):Play()    
-
-                    TweenService:Create(object, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        BackgroundTransparency = 0.5
-                    }):Play()
-
-                    TweenService:Create(object.TextLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        TextTransparency = 0.2,
-                        TextColor3 = accent()
-                    }):Play()
-
-                    TweenService:Create(object.TextLabel.UIGradient, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Offset = Vector2.new(1, 0)
-                    }):Play()
-
-                    TweenService:Create(object.Icon, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        ImageTransparency = 0.2,
-                        ImageColor3 = accent()
+                if bar then
+                    TweenService:Create(bar, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        BackgroundTransparency = 0
                     }):Play()
                 end
+                TweenService:Create(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 0.88
+                }):Play()
+                TweenService:Create(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    TextTransparency = 0.05,
+                    TextColor3 = Theme.Text
+                }):Play()
 
                 continue
             end
 
-            if object.BackgroundTransparency ~= 1 then
-                TweenService:Create(object, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            if bar then
+                TweenService:Create(bar, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                     BackgroundTransparency = 1
                 }):Play()
-                
-                TweenService:Create(object.TextLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    TextTransparency = 0.45,
-                    TextColor3 = Color3.fromRGB(255, 255, 255)
-                }):Play()
-
-                TweenService:Create(object.TextLabel.UIGradient, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    Offset = Vector2.new(0, 0)
-                }):Play()
-
-                TweenService:Create(object.Icon, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    ImageTransparency = 0.55,
-                    ImageColor3 = Color3.fromRGB(255, 255, 255)
+            end
+            if object.BackgroundTransparency ~= 1 then
+                TweenService:Create(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    BackgroundTransparency = 1
                 }):Play()
             end
+            TweenService:Create(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                TextTransparency = 0.55,
+                TextColor3 = Theme.TextDim
+            }):Play()
         end
     end
 
@@ -1592,25 +1564,33 @@ function Library:create_ui()
         Tab.AutoButtonColor = false
         Tab.BackgroundTransparency = 1
         Tab.Name = 'Tab'
-        Tab.Size = UDim2.new(0, 129, 0, 30)
+        Tab.Size = UDim2.new(0, 129, 0, 32)
         Tab.BorderSizePixel = 0
         Tab.TextSize = 14
         Tab.BackgroundColor3 = Theme.Panel
         Tab.Parent = Tabs
         Tab.LayoutOrder = self._tab
         
-        local UICorner = Instance.new('UICorner')
-        UICorner.CornerRadius = UDim.new(0, 6)
-        UICorner.Parent = Tab
+        local TabBar = Instance.new('Frame')
+        TabBar.Name = 'TabBar'
+        TabBar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        TabBar.AnchorPoint = Vector2.new(0, 0.5)
+        TabBar.BackgroundTransparency = 1
+        TabBar.Position = UDim2.new(0, 6, 0.5, 0)
+        TabBar.Size = UDim2.new(0, 2, 0, 20)
+        TabBar.BorderSizePixel = 0
+        TabBar.BackgroundColor3 = accent()
+        TabBar.ZIndex = 2
+        TabBar.Parent = Tab
         
         local TextLabel = Instance.new('TextLabel')
         TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextLabel.TextTransparency = 0.45
+        TextLabel.TextColor3 = Theme.TextDim
+        TextLabel.TextTransparency = 0.55
         TextLabel.Text = title
         TextLabel.Size = UDim2.new(0, font_size.X, 0, 16)
         TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-        TextLabel.Position = UDim2.new(0.2400001734495163, 0, 0.5, 0)
+        TextLabel.Position = UDim2.new(0, 14, 0.5, 0)
         TextLabel.BackgroundTransparency = 1
         TextLabel.TextXAlignment = Enum.TextXAlignment.Left
         TextLabel.BorderSizePixel = 0
@@ -1618,28 +1598,6 @@ function Library:create_ui()
         TextLabel.TextSize = 13
         TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         TextLabel.Parent = Tab
-        
-        local UIGradient = Instance.new('UIGradient')
-        UIGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(0.7, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-        }
-        UIGradient.Parent = TextLabel
-        
-        local Icon = Instance.new('ImageLabel')
-        Icon.ScaleType = Enum.ScaleType.Fit
-        Icon.ImageTransparency = 0.55
-        Icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        Icon.AnchorPoint = Vector2.new(0, 0.5)
-        Icon.BackgroundTransparency = 1
-        Icon.Position = UDim2.new(0.10000000149011612, 0, 0.5, 0)
-        Icon.Name = 'Icon'
-        Icon.Image = icon
-        Icon.Size = UDim2.new(0, 12, 0, 12)
-        Icon.BorderSizePixel = 0
-        Icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        Icon.Parent = Tab
 
         local LeftSection = Instance.new('ScrollingFrame')
         LeftSection.Name = 'LeftSection'
@@ -1763,21 +1721,6 @@ function Library:create_ui()
             Header.Parent = Module
 
             createAccentLine(Header, UDim2.new(0, 0, 0, 2), 241, 'ModuleSweep')
-            
-            local Icon = Instance.new('ImageLabel')
-            Icon.ImageColor3 = accent()
-            Icon.ScaleType = Enum.ScaleType.Fit
-            Icon.ImageTransparency = 0.699999988079071
-            Icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            Icon.AnchorPoint = Vector2.new(0, 0.5)
-            Icon.Image = 'rbxassetid://79095934438045'
-            Icon.BackgroundTransparency = 1
-            Icon.Position = UDim2.new(0.07100000232458115, 0, 0.8199999928474426, 0)
-            Icon.Name = 'Icon'
-            Icon.Size = UDim2.new(0, 15, 0, 15)
-            Icon.BorderSizePixel = 0
-            Icon.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Icon.Parent = Header
             
             local ModuleName = Instance.new('TextLabel')
             ModuleName.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
@@ -2903,7 +2846,7 @@ function Library:create_ui()
                 local Arrow = Instance.new('ImageLabel')
                 Arrow.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Arrow.AnchorPoint = Vector2.new(0, 0.5)
-                Arrow.Image = 'rbxassetid://84232453189324'
+                Arrow.Image = 'https://raw.githubusercontent.com/thecoolersyn/mainui/main/assets/dropdown.png'
                 Arrow.BackgroundTransparency = 1
                 Arrow.Position = UDim2.new(0.9100000262260437, 0, 0.5, 0)
                 Arrow.Name = 'Arrow'

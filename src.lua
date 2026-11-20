@@ -1190,7 +1190,7 @@ function Library:create_ui()
     Container.Parent = March
     
     local UICorner = Instance.new('UICorner')
-    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.CornerRadius = UDim.new(0, 12)
     UICorner.Parent = Container
     
     createAccentBorder(Container)
@@ -1268,7 +1268,7 @@ function Library:create_ui()
     
     local Pin = Instance.new('Frame')
     Pin.Name = 'Pin'
-    Pin.Position = UDim2.new(0.026000000536441803, 0, 0.13600000739097595, 0)
+    Pin.Position = UDim2.new(0.026, 0, 0.1257, 0)
     Pin.BorderColor3 = Color3.fromRGB(0, 0, 0)
     Pin.Size = UDim2.new(0, 2, 0, 16)
     Pin.BorderSizePixel = 0
@@ -1511,7 +1511,7 @@ function Library:create_ui()
                     local offset = object.LayoutOrder * 0.0626
 
                     TweenService:Create(Pin, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Position = UDim2.fromScale(0.026, 0.142 + offset)
+                        Position = UDim2.fromScale(0.026, 0.1257 + offset)
                     }):Play()    
 
                     TweenService:Create(object, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -1542,7 +1542,7 @@ function Library:create_ui()
                 }):Play()
                 
                 TweenService:Create(object.TextLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    TextTransparency = 0.7,
+                    TextTransparency = 0.45,
                     TextColor3 = Color3.fromRGB(255, 255, 255)
                 }):Play()
 
@@ -1551,7 +1551,7 @@ function Library:create_ui()
                 }):Play()
 
                 TweenService:Create(object.Icon, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    ImageTransparency = 0.8,
+                    ImageTransparency = 0.55,
                     ImageColor3 = Color3.fromRGB(255, 255, 255)
                 }):Play()
             end
@@ -1600,13 +1600,13 @@ function Library:create_ui()
         Tab.LayoutOrder = self._tab
         
         local UICorner = Instance.new('UICorner')
-        UICorner.CornerRadius = UDim.new(0, 5)
+        UICorner.CornerRadius = UDim.new(0, 6)
         UICorner.Parent = Tab
         
         local TextLabel = Instance.new('TextLabel')
         TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
         TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextLabel.TextTransparency = 0.7 -- 0.800000011920929
+        TextLabel.TextTransparency = 0.45
         TextLabel.Text = title
         TextLabel.Size = UDim2.new(0, font_size.X, 0, 16)
         TextLabel.AnchorPoint = Vector2.new(0, 0.5)
@@ -1622,14 +1622,14 @@ function Library:create_ui()
         local UIGradient = Instance.new('UIGradient')
         UIGradient.Color = ColorSequence.new{
             ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(0.7, Color3.fromRGB(155, 155, 155)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(58, 58, 58))
+            ColorSequenceKeypoint.new(0.7, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
         }
         UIGradient.Parent = TextLabel
         
         local Icon = Instance.new('ImageLabel')
         Icon.ScaleType = Enum.ScaleType.Fit
-        Icon.ImageTransparency = 0.800000011920929
+        Icon.ImageTransparency = 0.55
         Icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
         Icon.AnchorPoint = Vector2.new(0, 0.5)
         Icon.BackgroundTransparency = 1
@@ -1677,7 +1677,7 @@ function Library:create_ui()
         RightSection.AnchorPoint = Vector2.new(0, 0.5)
         RightSection.ScrollBarImageTransparency = 1
         RightSection.BackgroundTransparency = 1
-        RightSection.Position = UDim2.new(0.6290000081062317, 0, 0.55, 0)
+        RightSection.Position = UDim2.new(0.6246, 0, 0.55, 0)
         RightSection.BorderColor3 = Color3.fromRGB(0, 0, 0)
         RightSection.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         RightSection.BorderSizePixel = 0
@@ -1739,12 +1739,12 @@ function Library:create_ui()
             UIListLayout.Parent = Module
             
             local UICorner = Instance.new('UICorner')
-            UICorner.CornerRadius = UDim.new(0, 5)
+            UICorner.CornerRadius = UDim.new(0, 8)
             UICorner.Parent = Module
             
             local UIStroke = Instance.new('UIStroke')
             UIStroke.Color = Accent.BaseColor
-            UIStroke.Transparency = 0.5
+            UIStroke.Transparency = 0.2
             UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             UIStroke.Parent = Module
             
@@ -1821,7 +1821,7 @@ function Library:create_ui()
             local Toggle = Instance.new('Frame')
             Toggle.Name = 'Toggle'
             Toggle.BackgroundTransparency = 0.1
-            Toggle.Position = UDim2.new(0.8199999928474426, 0, 0.7570000290870667, 0)
+            Toggle.Position = UDim2.new(0, 194, 0, 68)
             Toggle.BorderColor3 = Color3.fromRGB(0, 0, 0)
             Toggle.Size = UDim2.fromOffset(30, 16)
             Toggle.BorderSizePixel = 0
@@ -1836,7 +1836,7 @@ function Library:create_ui()
             Circle.BorderColor3 = Color3.fromRGB(0, 0, 0)
             Circle.AnchorPoint = Vector2.new(0, 0.5)
             Circle.BackgroundTransparency = 0.05
-            Circle.Position = UDim2.new(0, 0, 0.5, 0)
+            Circle.Position = UDim2.new(0, 2, 0.5, 0)
             Circle.Name = 'Circle'
             Circle.Size = UDim2.new(0, 12, 0, 12)
             Circle.BorderSizePixel = 0
@@ -1932,7 +1932,7 @@ function Library:create_ui()
 
                     TweenService:Create(Circle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundColor3 = Theme.Knob,
-                        Position = UDim2.fromScale(0.53, 0.5)
+                        Position = UDim2.new(0, 16, 0.5, 0)
                     }):Play()
                 else
                     TweenService:Create(Module, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -1945,7 +1945,7 @@ function Library:create_ui()
 
                     TweenService:Create(Circle, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundColor3 = Theme.Muted,
-                        Position = UDim2.fromScale(0, 0.5)
+                        Position = UDim2.new(0, 2, 0.5, 0)
                     }):Play()
                 end
 
@@ -1999,7 +1999,7 @@ function Library:create_ui()
 
                 Toggle.BackgroundColor3 = accent()
                 Circle.BackgroundColor3 = Theme.Knob
-                Circle.Position = UDim2.fromScale(0.53, 0.5)
+                Circle.Position = UDim2.new(0, 16, 0.5, 0)
             end
 
             if Library._config._keybinds[settings.flag] then

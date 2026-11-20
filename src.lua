@@ -1576,7 +1576,7 @@ function Library:create_ui()
         TabBar.BorderColor3 = Color3.fromRGB(0, 0, 0)
         TabBar.AnchorPoint = Vector2.new(0, 0.5)
         TabBar.BackgroundTransparency = 1
-        TabBar.Position = UDim2.new(0, 6, 0.5, 0)
+        TabBar.Position = UDim2.new(0, 12, 0.5, 0)
         TabBar.Size = UDim2.new(0, 2, 0, 20)
         TabBar.BorderSizePixel = 0
         TabBar.BackgroundColor3 = accent()

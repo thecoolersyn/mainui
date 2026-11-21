@@ -505,11 +505,22 @@ local function addGlassShimmer(object, name, peak)
     gradient.Parent = shimmer
 
     local phase = math.random()
-    shimmer.BackgroundTransparency = 1
-    accentRegister(shimmer, function()
+    -- Start partially visible so the gradient shows even if the animation
+    -- loop is throttled on another executor.
+    shimmer.BackgroundTransparency = 0.65
+    local function updateGlint()
         local pulse, p = glintPulse(phase)
         shimmer.BackgroundTransparency = 1 - pulse
         gradient.Offset = Vector2.new((p - 0.5) * 0.35, 0)
+    end
+    accentRegister(shimmer, updateGlint)
+    -- Independent task fallback: some executors throttle RenderStepped, so
+    -- keep the shimmer alive on a task loop as well.
+    task.spawn(function()
+        while shimmer.Parent do
+            task.wait(1 / 30)
+            if not accentConnection then updateGlint() end
+        end
     end)
 
     return shimmer
@@ -1278,13 +1289,13 @@ UIListLayout.Parent = NotificationContainer
 function Library.SendNotification(settings)
     settings = settings or {}
     local isOn = settings.state == true
-    local stateIcon
+    local StateIcon
     if settings.kind == "bell" then
-        stateIcon = ICONS.Bell
+        StateIcon = ICONS.Bell
     elseif settings.kind == "check" or settings.kind == "x" then
-        stateIcon = (settings.kind == "check" and ICONS.Check or ICONS.X)
+        StateIcon = (settings.kind == "check" and ICONS.Check or ICONS.X)
     else
-        stateIcon = isOn and ICONS.Check or ICONS.X
+        StateIcon = isOn and ICONS.Check or ICONS.X
     end
 
     local Notification = Instance.new("Frame")
@@ -1299,18 +1310,43 @@ function Library.SendNotification(settings)
     Card.Name = "Card"
     Card.Size = UDim2.new(1, 0, 0, 62)
     Card.AutomaticSize = Enum.AutomaticSize.Y
-    Card.BackgroundColor3 = Theme.Panel
+    Card.BackgroundColor3 = Theme.Window
     Card.BackgroundTransparency = 0
     Card.BorderSizePixel = 0
     Card.Parent = Notification
 
     local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.CornerRadius = UDim.new(0, 8)
     Corner.Parent = Card
+
+    -- Pure-black gradient face. Built as an explicit overlay frame so it
+    -- renders on every device/runtime (a direct UIGradient is ignored by some).
+    local Face = Instance.new("Frame")
+    Face.Name = "Face"
+    Face.Size = UDim2.fromScale(1, 1)
+    Face.BackgroundColor3 = Color3.new(1, 1, 1)
+    Face.BackgroundTransparency = 1
+    Face.BorderSizePixel = 0
+    Face.ZIndex = 0
+    Face.Active = false
+    Face.Selectable = false
+    Face.Parent = Card
+    local FaceCorner = Instance.new("UICorner")
+    FaceCorner.CornerRadius = UDim.new(0, 8)
+    FaceCorner.Parent = Face
+    local FaceGradient = Instance.new("UIGradient")
+    FaceGradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
+    FaceGradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.78),
+        NumberSequenceKeypoint.new(0.55, 0.94),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    FaceGradient.Rotation = 45
+    FaceGradient.Parent = Face
 
     local Stroke = Instance.new("UIStroke")
     Stroke.Color = Accent.BaseColor
-    Stroke.Transparency = 0.35
+    Stroke.Transparency = 0.4
     Stroke.Thickness = 1
     Stroke.Parent = Card
 
@@ -1321,15 +1357,6 @@ function Library.SendNotification(settings)
     TopStrip.BackgroundColor3 = settings.strip or Color3.fromRGB(235, 90, 150)
     TopStrip.BorderSizePixel = 0
     TopStrip.Parent = Card
-
-    local StateIcon
-    if settings.kind == "bell" then
-        StateIcon = ICONS.Bell
-    elseif settings.kind == "check" or settings.kind == "x" then
-        StateIcon = (settings.kind == "check" and ICONS.Check or ICONS.X)
-    else
-        StateIcon = isOn and ICONS.Check or ICONS.X
-    end
 
     local Icon = Instance.new("ImageLabel")
     Icon.Name = "Icon"
@@ -1364,14 +1391,17 @@ function Library.SendNotification(settings)
     Body.AutomaticSize = Enum.AutomaticSize.Y
     Body.Parent = Card
 
-    local Underline = Instance.new("Frame")
-    Underline.Name = "Underline"
-    Underline.Size = UDim2.new(1, -38, 0, 1)
-    Underline.Position = UDim2.fromOffset(38, 48)
-    Underline.BackgroundColor3 = Color3.fromRGB(220, 180, 70)
-    Underline.BackgroundTransparency = 0.25
-    Underline.BorderSizePixel = 0
-    Underline.Parent = Card
+    -- Timer line at the bottom: starts full and shrinks to the left as the
+    -- notification approaches its dismissal, showing remaining time.
+    local Timer = Instance.new("Frame")
+    Timer.Name = "Timer"
+    Timer.Size = UDim2.new(1, 0, 0, 2)
+    Timer.Position = UDim2.new(0, 0, 1, -2)
+    Timer.AnchorPoint = Vector2.new(0, 0)
+    Timer.BackgroundColor3 = accent()
+    Timer.BackgroundTransparency = 0.25
+    Timer.BorderSizePixel = 0
+    Timer.Parent = Card
 
     local Close = Instance.new("TextButton")
     Close.Name = "Close"
@@ -1404,7 +1434,13 @@ function Library.SendNotification(settings)
             Position = UDim2.new(0, 0, 0, 0)
         })
         tweenIn:Play()
-        task.wait(settings.duration or 4)
+        local duration = settings.duration or 4
+        -- Drain the timer line linearly over the visible lifetime.
+        local timeTween = TweenService:Create(Timer, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 0, 0, 2)
+        })
+        timeTween:Play()
+        task.wait(duration)
         dismiss()
     end)
 end
@@ -2519,6 +2555,7 @@ function Library:create_ui()
 
             Header.MouseButton1Click:Connect(function()
                 if Library._choosing_keybind then return end
+                if ModuleManager._no_toggle then return end
                 ModuleManager:change_state(not ModuleManager._state)
             end)
 

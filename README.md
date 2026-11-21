@@ -40,9 +40,13 @@ UI:load()
 Call these on the `Library` table (e.g. `Library.SetAccentColor(...)` or
 `Library:SetAccentColor(...)`).
 
-### `Library.new()`
+### `Library.new(settings?)`
 Creates and returns a new `UI` instance. Call this once, then build tabs and
 modules on it, then call `UI:load()`.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `default_open` | boolean | `true` | Set `false` so the window starts minimized. Can also be changed later via `SetDefaultOpen`. |
 
 ### `Library.SendNotification(settings)`
 Shows a toast in the top-right corner. Returns nothing.
@@ -119,6 +123,10 @@ minimized only the centered "Norepine" brand is shown.
 Sets/reads the small game name shown next to the brand (default "Blade Ball").
 See also `NOREPINE_API.SetGameName` below.
 
+### `UI:SetDefaultOpen(state: boolean)` / `UI:GetDefaultOpen()` -> boolean
+Sets/reads whether the window starts open. If the UI is already loaded, calling
+`SetDefaultOpen` applies it immediately (opens or minimizes the window).
+
 ### `UI:Update1Run(value)`
 Sets the window background transparency. Pass `"nil"` to reset to opaque, or a
 number to set it directly.
@@ -148,9 +156,9 @@ Creates a module card. Settings:
 | `flag` | string | Save/config key for this module. |
 | `section` | `"left"` / `"right"` | Which column the card goes in (default left). |
 | `callback` | function(state) | Called whenever the module toggles. |
-| `notoggle` / `Module_NoToggle` | boolean | If `true`, the card is always open, has **no toggle button or bell**, and exposes its content permanently (see Image 4). |
-| `Module_Rebind` | boolean | Set `false` to hide the module-level rebind chip. Default shown. |
-| `Module_ContentRebind` | boolean | Set `false` to hide all rebind chips on the content rows. Default shown. |
+| `no_toggle` | boolean | `true` -> no toggle button/bell, content always shown. `false` -> toggle shown and the module is **off by default**. Old names `notoggle` / `Module_NoToggle` still work. |
+| `rebind` | boolean | `true` -> show the module rebind button. `false` -> hide it. Old name `Module_Rebind` still works. |
+| `Module_ContentRebind` | boolean | `true` -> show rebind chips on content rows. `false` -> hide them. Defaults to the value of `rebind`. |
 
 ---
 
@@ -198,11 +206,42 @@ A draggable value slider.
 |---------|------|-------------|
 | `title` | string | Row label. |
 | `flag` | string | Config key. |
-| `minimum_value` / `maximum_value` | number | Range. |
+| `minimum_value` / `maximum_value` | number | Range (default 0–100). |
 | `value` | number | Initial value. |
 | `round_number` | boolean | Round to integers. |
 | `ignoresaved` | boolean | Don't persist to config. |
-| `callback` | function(number) | Called while dragging. |
+| `callback` | function(value) or function(min, max) | Called while dragging. |
+| `require_flag` | string | Toggle flag that gates this slider. While the toggle is **off**, the slider is hidden and its callback is never run. (alias: `depends_on`) |
+| `double_point` | boolean | `true` -> one slider with **two draggable handles** (a range). |
+| `value2` | number | Second handle's initial value (used with `double_point`). |
+
+**Toggle-gated sliders (`require_flag`):** Useful when a setting only makes
+sense under a toggle (e.g. "Randomized accuracy"). Create the toggle checkbox
+with `flag = "z_rand_acc"`, then the slider with `require_flag = "z_rand_acc"`.
+When the toggle is off the slider disappears and all its functions (callbacks)
+are suppressed; turning the toggle on reveals it.
+
+**Double-point sliders (`double_point = true`):** Renders two knobs on one
+track. The callback receives `(min, max)`. The handles cannot cross — the right
+handle is clamped so it never goes past the left one, and vice versa. Saved
+value is the table `{ min, max }`.
+
+SliderManager methods:
+- `set_percentage(p)` — set the first handle (backwards compatible).
+- `set_values(v1, v2)` — set both handles (clamped so they don't cross).
+
+Example:
+
+```lua
+mod:create_checkbox({ title="Randomized accuracy", flag="z_rand_acc", callback=function() end })
+mod:create_slider({
+    title="Accuracy range", flag="z_acc_range",
+    minimum_value=0, maximum_value=100, value=25, value2=75,
+    double_point=true,
+    require_flag="z_rand_acc",
+    callback=function(min, max) print("range", min, max) end
+})
+```
 
 ### `Module:create_textbox(settings)` -> TextboxManager
 A text input. Settings: `title`, `flag`, `placeholder`, `callback(text)`.

@@ -805,9 +805,25 @@ local Library = {
 
     _dragging = false,
     _drag_start = nil,
-    _container_position = nil
+    _container_position = nil,
+
+    -- Sliders that depend on a toggle flag (settings.require_flag):
+    --   { flag = <toggleFlag>, refresh = function(enabled) end }
+    _dependent_sliders = {}
 }
 Library.__index = Library
+
+-- Refresh every slider that depends on the given toggle flag. Called from a
+-- checkbox's change_state so dependent sliders show/hide immediately and stop
+-- firing their callbacks while the controlling toggle is off.
+function Library:refresh_dependent_sliders(flag)
+    for _, entry in ipairs(self._dependent_sliders) do
+        if entry.flag == flag then
+            local enabled = self._config._flags[flag] == true
+            entry.refresh(enabled)
+        end
+    end
+end
 
 
 -- ========================================================================= --
@@ -1266,10 +1282,12 @@ end
 
 
 
-function Library.new()
+function Library.new(settings)
+    settings = settings or {}
     local self = setmetatable({
         _loaded = false,
         _tab = 0,
+        _default_open = settings.default_open ~= false, -- true unless explicitly false
     }, Library)
     
     self:create_ui()
@@ -1899,9 +1917,8 @@ function Library:create_ui()
             end)
         end
     
-        TweenService:Create(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Size = UDim2.fromOffset(698, 479)
-        }):Play()
+        -- Start in the configured default state (open unless default_open=false).
+        self:change_visiblity(self._default_open ~= false)
 
         AcrylicBlur.new(Container)
 
@@ -2153,13 +2170,32 @@ function Library:create_ui()
 
             local LayoutOrderModule = 0;
 
+            -- Explicit boolean settings:
+            --   no_toggle: true  -> no toggle, content always shown
+            --              false -> toggle shown, module OFF by default
+            --   rebind:    true  -> show the rebind button
+            --              false -> hide the rebind button
+            -- Old names (notoggle, Module_NoToggle, Module_Rebind,
+            -- Module_ContentRebind) are still accepted.
+            local noToggle = settings.no_toggle
+            if noToggle == nil then noToggle = settings.notoggle end
+            if noToggle == nil then noToggle = settings.Module_NoToggle end
+
+            local rebind = settings.rebind
+            if rebind == nil then rebind = settings.Module_Rebind end
+
+            local contentRebind = settings.content_rebind
+            if contentRebind == nil then contentRebind = settings.Module_ContentRebind end
+            if contentRebind == nil then contentRebind = rebind end
+
             local ModuleManager = {
                 _state = false,
                 _size = 0,
                 _multiplier = 0,
-                _no_toggle = settings.notoggle == true or settings.Module_NoToggle == true,
-                _module_rebind = settings.Module_Rebind,
-                _content_rebind = settings.Module_ContentRebind
+                _no_toggle = noToggle == true,
+                _no_toggle_declared = noToggle ~= nil,
+                _module_rebind = rebind,
+                _content_rebind = contentRebind
             }
 
             if settings.section == 'right' then
@@ -2306,6 +2342,8 @@ function Library:create_ui()
             Keybind.Name = 'Keybind'
             Keybind.Position = UDim2.fromOffset(17, 68)
             Keybind.ZIndex = 2
+            -- Show when rebind is true (or unset for backwards compatibility);
+            -- hide only when explicitly false.
             Keybind.Visible = ModuleManager._module_rebind ~= false
             local TextLabel = Keybind
 
@@ -2379,8 +2417,17 @@ function Library:create_ui()
                 Toggle.Visible = not self._no_toggle
                 NotifyBell.Visible = not self._no_toggle
                 if self._no_toggle then
+                    -- No toggle: force open and show all content.
                     self._state = true
                     Module.Size = UDim2.fromOffset(241, 93 + self._size + self._multiplier)
+                else
+                    -- Toggle shown: OFF by default, so collapse and clear flag.
+                    self._state = false
+                    Library._config._flags[settings.flag] = false
+                    Module.Size = UDim2.fromOffset(241, 93)
+                    Toggle.BackgroundColor3 = Theme.Track
+                    Circle.BackgroundColor3 = Theme.Muted
+                    Circle.Position = UDim2.new(0, 2, 0.5, 0)
                 end
             end
             function ModuleManager:_set_module_rebind(state)
@@ -2481,9 +2528,14 @@ function Library:create_ui()
             end
 
             if ModuleManager._no_toggle then
+                -- Always open, no toggle shown.
                 ModuleManager._state = true
-                -- Expand after content is added via change_state; here _size is still 0.
                 settings.callback(true)
+            elseif ModuleManager._no_toggle_declared and noToggle == false then
+                -- Explicitly declared false: toggle shown, OFF by default.
+                -- Clear any saved flag so each load starts closed.
+                ModuleManager._state = false
+                Library._config._flags[settings.flag] = false
             elseif Library:flag_type(settings.flag, 'boolean') then
                 ModuleManager._state = true
                 settings.callback(ModuleManager._state)
@@ -2926,6 +2978,7 @@ function Library:create_ui()
                     end
                     Library._config._flags[settings.flag] = self._state
                     Config:save(game.GameId, Library._config)
+                    Library:refresh_dependent_sliders(settings.flag)
                     settings.callback(self._state)
                 end
             
@@ -3083,9 +3136,22 @@ function Library:create_ui()
             
             function ModuleManager:create_slider(settings: any)
 
+                settings = settings or {}
+                local minimum = settings.minimum_value or 0
+                local maximum = settings.maximum_value or 100
+                if maximum <= minimum then maximum = minimum + 1 end
+                local doublePoint = settings.double_point == true
+                local requireFlag = settings.require_flag or settings.depends_on
+                local roundValue = settings.round_number == true
+
+                local function round(n)
+                    if roundValue then return math.floor(n) end
+                    return math.floor(n * 10) / 10
+                end
+
                 LayoutOrderModule = LayoutOrderModule + 1
 
-                local SliderManager = {}
+                local SliderManager = { _require_flag = requireFlag, _double_point = doublePoint, _enabled = true }
 
                 if self._size == 0 then
                     self._size = 11
@@ -3170,20 +3236,35 @@ function Library:create_ui()
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(79, 79, 79))
                 }
                 UIGradient.Parent = Fill
-                
-                local Circle = Instance.new('Frame')
-                Circle.AnchorPoint = Vector2.new(1, 0.5)
-                Circle.Name = 'Circle'
-                Circle.Position = UDim2.new(1, 0, 0.5, 0)
-                Circle.BorderColor3 = Color3.fromRGB(0, 0, 0)
-                Circle.Size = UDim2.new(0, 6, 0, 6)
-                Circle.BorderSizePixel = 0
-                Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                Circle.Parent = Fill
-                
-                local UICorner = Instance.new('UICorner')
-                UICorner.CornerRadius = UDim.new(1, 0)
-                UICorner.Parent = Circle
+
+                -- Circle knobs. Single-point sliders use one knob anchored to
+                -- the right edge of the fill; double-point uses two (one per edge).
+                local function makeKnob(anchor)
+                    local knob = Instance.new('Frame')
+                    knob.AnchorPoint = anchor
+                    knob.Name = 'Circle'
+                    knob.BorderColor3 = Color3.fromRGB(0, 0, 0)
+                    knob.Size = UDim2.new(0, 6, 0, 6)
+                    knob.BorderSizePixel = 0
+                    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    knob.Parent = Fill
+                    local c = Instance.new('UICorner')
+                    c.CornerRadius = UDim.new(1, 0)
+                    c.Parent = knob
+                    return knob
+                end
+
+                local Circle
+                local CircleLeft, CircleRight
+                if doublePoint then
+                    CircleLeft = makeKnob(Vector2.new(0.5, 0.5))
+                    CircleLeft.Position = UDim2.new(0, 0, 0.5, 0)
+                    CircleRight = makeKnob(Vector2.new(0.5, 0.5))
+                    CircleRight.Position = UDim2.new(1, 0, 0.5, 0)
+                else
+                    Circle = makeKnob(Vector2.new(1, 0.5))
+                    Circle.Position = UDim2.new(1, 0, 0.5, 0)
+                end
                 
                 local Value = Instance.new('TextLabel')
                 Value.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
@@ -3191,7 +3272,7 @@ function Library:create_ui()
                 Value.TextTransparency = 0.20000000298023224
                 Value.Text = '50'
                 Value.Name = 'Value'
-                Value.Size = UDim2.new(0, 42, 0, 13)
+                Value.Size = UDim2.new(0, 64, 0, 13)
                 Value.AnchorPoint = Vector2.new(1, 0)
                 Value.Position = UDim2.new(1, 0, 0, 0)
                 Value.BackgroundTransparency = 1
@@ -3202,38 +3283,92 @@ function Library:create_ui()
                 Value.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 Value.Parent = Slider
 
-                function SliderManager:set_percentage(percentage: number)
-                    local rounded_number = 0
+                -- Current value state (in data units, not percent).
+                local value1 = settings.value or minimum
+                local value2 = settings.value2 or maximum
 
-                    if settings.round_number then
-                        rounded_number = math.floor(percentage)
+                local function applyVisual()
+                    local p1 = (value1 - minimum) / (maximum - minimum)
+                    p1 = math.clamp(p1, 0, 1)
+                    if doublePoint then
+                        local p2 = (value2 - minimum) / (maximum - minimum)
+                        p2 = math.clamp(p2, 0, 1)
+                        local left, right = math.min(p1, p2), math.max(p1, p2)
+                        Fill.Position = UDim2.new(left, 0, 0.5, 0)
+                        Fill.Size = UDim2.new(right - left, 0, 0, 4)
+                        CircleLeft.Position = UDim2.new(0, 0, 0.5, 0)
+                        CircleRight.Position = UDim2.new(1, 0, 0.5, 0)
+                        Value.Text = round(value1) .. ' - ' .. round(value2)
                     else
-                        rounded_number = math.floor(percentage * 10) / 10
+                        Fill.Position = UDim2.new(0, 0, 0.5, 0)
+                        Fill.Size = UDim2.new(p1, 0, 0, 4)
+                        Value.Text = round(value1)
                     end
-
-                    percentage = (percentage - settings.minimum_value) / (settings.maximum_value - settings.minimum_value)
-                    
-                    local slider_size = math.clamp(percentage, 0.02, 1) * Drag.Size.X.Offset
-                    local number_threshold = math.clamp(rounded_number, settings.minimum_value, settings.maximum_value)
-    
-                    Library._config._flags[settings.flag] = number_threshold
-                    Value.Text = number_threshold
-    
-                    TweenService:Create(Fill, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                        Size = UDim2.fromOffset(slider_size, Drag.Size.Y.Offset)
-                    }):Play()
-    
-                    settings.callback(number_threshold)
                 end
 
-                function SliderManager:update()
-                    local mouse_position = (mouse.X - Drag.AbsolutePosition.X) / Drag.Size.X.Offset
-                    local percentage = settings.minimum_value + (settings.maximum_value - settings.minimum_value) * mouse_position
+                -- fire callback + persist. Skipped entirely while disabled.
+                local function commit()
+                    if not SliderManager._enabled then return end
+                    if doublePoint then
+                        Library._config._flags[settings.flag] = { round(value1), round(value2) }
+                        settings.callback(round(value1), round(value2))
+                    else
+                        Library._config._flags[settings.flag] = round(value1)
+                        settings.callback(round(value1))
+                    end
+                    if not settings.ignoresaved then
+                        Config:save(game.GameId, Library._config)
+                    end
+                end
 
-                    self:set_percentage(percentage)
+                function SliderManager:set_percentage(percentage: number)
+                    -- Kept for backwards compatibility: sets the first point.
+                    value1 = math.clamp(minimum + (maximum - minimum) * percentage, minimum, maximum)
+                    applyVisual()
+                    commit()
+                end
+
+                function SliderManager:set_values(v1, v2)
+                    value1 = math.clamp(v1 or minimum, minimum, maximum)
+                    if doublePoint then
+                        value2 = math.clamp(v2 or maximum, minimum, maximum)
+                        -- Never let the points cross: right >= left.
+                        if value2 < value1 then value2 = value1 end
+                    end
+                    applyVisual()
+                    commit()
+                end
+
+                local function valueFromMouse()
+                    local x = (mouse.X - Drag.AbsolutePosition.X) / Drag.Size.X.Offset
+                    return math.clamp(minimum + (maximum - minimum) * x, minimum, maximum)
+                end
+
+                local draggingHandle = nil -- 'left' | 'right' | nil for single
+                function SliderManager:update()
+                    local v = valueFromMouse()
+                    if doublePoint then
+                        if draggingHandle == 'left' then
+                            -- Left handle cannot pass the right handle.
+                            value1 = math.min(v, value2)
+                        elseif draggingHandle == 'right' then
+                            -- Right handle cannot pass the left handle.
+                            value2 = math.max(v, value1)
+                        end
+                    else
+                        value1 = v
+                    end
+                    applyVisual()
+                    commit()
                 end
 
                 function SliderManager:input()
+                    if not SliderManager._enabled then return end
+                    if doublePoint then
+                        -- Pick the handle closest to the click position.
+                        local v = valueFromMouse()
+                        draggingHandle = (math.abs(v - value1) <= math.abs(v - value2)) and 'left' or 'right'
+                    end
                     SliderManager:update()
     
                     Connections['slider_drag_'..settings.flag] = mouse.Move:Connect(function()
@@ -3244,27 +3379,32 @@ function Library:create_ui()
                         if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
                             return
                         end
-    
+                        draggingHandle = nil
                         Connections:disconnect('slider_drag_'..settings.flag)
                         Connections:disconnect('slider_input_'..settings.flag)
-
-                        if not settings.ignoresaved then
-                            Config:save(game.GameId, Library._config);
-                        end;
                     end)
                 end
 
+                -- Load saved / default value without firing the callback on load.
+                local saved = Library._config._flags[settings.flag]
+                if doublePoint and type(saved) == 'table' then
+                    value1 = math.clamp(tonumber(saved[1]) or minimum, minimum, maximum)
+                    value2 = math.clamp(tonumber(saved[2]) or maximum, minimum, maximum)
+                elseif not doublePoint and Library:flag_type(settings.flag, 'number') and not settings.ignoresaved then
+                    value1 = math.clamp(saved, minimum, maximum)
+                end
 
-                if Library:flag_type(settings.flag, 'number') then
-                    if not settings.ignoresaved then
-                        SliderManager:set_percentage(Library._config._flags[settings.flag]);
-                    else
-                        SliderManager:set_percentage(settings.value);
-                    end;
-                else
-                    SliderManager:set_percentage(settings.value);
-                end;
-    
+                -- Toggle dependency: hide slider and disable callbacks while off.
+                local function refresh(enabled)
+                    SliderManager._enabled = enabled
+                    Slider.Visible = enabled
+                end
+                if requireFlag then
+                    table.insert(Library._dependent_sliders, { flag = requireFlag, refresh = refresh })
+                    refresh(Library._config._flags[requireFlag] == true)
+                end
+                applyVisual()
+
                 Slider.MouseButton1Down:Connect(function()
                     SliderManager:input()
                 end)
@@ -3921,22 +4061,37 @@ function Library:create_ui()
         return SubTitle.Text
     end
 
-    -- Expose the three module rebind/toggle controls as simple setters that
-    -- can be called on any ModuleManager returned by create_module().
-    Library.Module_NoToggle = function(module)
+    -- Set/return the default open state. If UI has loaded, applies it now.
+    function self:SetDefaultOpen(state)
+        self._default_open = state ~= false
+        if self._ui_loaded then
+            self:change_visiblity(self._default_open)
+        end
+        return self._default_open
+    end
+    function self:GetDefaultOpen()
+        return self._default_open
+    end
+
+    -- Module control setters. Pass a boolean state to each:
+    --   Module_NoToggle(module, true)  -> no toggle, content always shown
+    --   Module_NoToggle(module, false) -> toggle shown, module off
+    --   Module_Rebind(module, true)    -> rebind button shown
+    --   Module_Rebind(module, false)   -> rebind button hidden
+    Library.Module_NoToggle = function(module, state)
         if not module then return end
-        module._no_toggle = true
-        if module._set_no_toggle then module:_set_no_toggle(true) end
+        local value = state == true
+        if module._set_no_toggle then module:_set_no_toggle(value) end
     end
     Library.Module_Rebind = function(module, state)
         if not module then return end
-        module._module_rebind = state ~= false
-        if module._set_module_rebind then module:_set_module_rebind(state) end
+        local value = state ~= false
+        if module._set_module_rebind then module:_set_module_rebind(value) end
     end
     Library.Module_ContentRebind = function(module, state)
         if not module then return end
-        module._content_rebind = state ~= false
-        if module._set_content_rebind then module:_set_content_rebind(state) end
+        local value = state ~= false
+        if module._set_content_rebind then module:_set_content_rebind(value) end
     end
 
     getgenv().NOREPINE_UI = self
@@ -3944,9 +4099,15 @@ function Library:create_ui()
         UI = self,
         SetGameName = function(name) self:SetGameName(name) end,
         GetGameName = function() return self:GetGameName() end,
+        SetDefaultOpen = function(state) return self:SetDefaultOpen(state) end,
+        GetDefaultOpen = function() return self:GetDefaultOpen() end,
         Module_NoToggle = Library.Module_NoToggle,
         Module_Rebind = Library.Module_Rebind,
         Module_ContentRebind = Library.Module_ContentRebind,
+        -- Short aliases matching the create_module settings names.
+        no_toggle = Library.Module_NoToggle,
+        rebind = Library.Module_Rebind,
+        content_rebind = Library.Module_ContentRebind,
     }
 
     return self

@@ -14,12 +14,13 @@ end
 
 local function noop() end
 
--- Left column: Interface
+-- Left column: Interface — no toggle, content always shown
 local interface = tabs.Combat:create_module({
     title = "Interface",
     description = "Window behavior",
     flag = "z_interface",
-    notoggle = true,
+    no_toggle = true,
+    rebind = true,
     callback = noop
 })
 
@@ -97,7 +98,8 @@ local background = tabs.Combat:create_module({
     title = "Background",
     description = "Image, GIF or video behind the menu",
     flag = "z_background",
-    notoggle = true,
+    no_toggle = true,
+    rebind = false,
     callback = noop
 })
 
@@ -122,6 +124,34 @@ background:create_slider({
     maximum_value = 1,
     value = 1,
     callback = noop
+})
+
+-- Demo: a toggle that reveals a dependent double-point slider. The slider is
+-- hidden and its callback is suppressed until "Randomized accuracy" is on.
+local accuracy = tabs.Combat:create_module({
+    title = "Accuracy",
+    description = "Toggle-gated range slider",
+    section = "right",
+    flag = "z_accuracy",
+    no_toggle = true,
+    rebind = false,
+    callback = noop
+})
+accuracy:create_checkbox({
+    title = "Randomized accuracy",
+    flag = "z_rand_acc",
+    callback = noop
+})
+accuracy:create_slider({
+    title = "Accuracy range",
+    flag = "z_acc_range",
+    minimum_value = 0,
+    maximum_value = 100,
+    value = 25,
+    value2 = 75,
+    double_point = true,
+    require_flag = "z_rand_acc",
+    callback = function(min, max) end
 })
 
 for _, manager in ipairs({ interface, notifications, appearance, background }) do

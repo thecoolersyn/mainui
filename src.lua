@@ -481,6 +481,10 @@ end
 -- A soft light band that drifts across a surface. In the reference this is
 -- part of the glass background itself, not a drawn line on top of the UI.
 local function addGlassShimmer(object, name, peak)
+    -- The band shape comes entirely from the UIGradient's transparency. The
+    -- frame itself stays fully opaque; only the gradient fades the band in
+    -- and out. Previously both layers were ~0.93 transparent at the same
+    -- time, multiplying down to ~7% opacity and making the shimmer invisible.
     local shimmer = Instance.new('Frame')
     shimmer.Name = name or 'GlassShimmer'
     shimmer.Size = UDim2.fromScale(1, 1)
@@ -492,30 +496,26 @@ local function addGlassShimmer(object, name, peak)
     shimmer.Selectable = false
     shimmer.Parent = object
 
+    local brightness = 1 - (peak or 0.15) -- peak is opacity; convert to transparency
     local gradient = Instance.new('UIGradient')
     gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
     gradient.Transparency = NumberSequence.new({
         NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.32, 1),
-        NumberSequenceKeypoint.new(0.5, peak or 0.9),
-        NumberSequenceKeypoint.new(0.68, 1),
+        NumberSequenceKeypoint.new(0.38, 1),
+        NumberSequenceKeypoint.new(0.5, brightness),
+        NumberSequenceKeypoint.new(0.62, 1),
         NumberSequenceKeypoint.new(1, 1)
     })
     gradient.Rotation = 45
     gradient.Parent = shimmer
 
     local phase = math.random()
-    -- Start partially visible so the gradient shows even if the animation
-    -- loop is throttled on another executor.
-    shimmer.BackgroundTransparency = 0.65
     local function updateGlint()
         local pulse, p = glintPulse(phase)
-        shimmer.BackgroundTransparency = 1 - pulse
-        gradient.Offset = Vector2.new((p - 0.5) * 0.35, 0)
+        -- Move the band across the surface instead of fading the whole frame.
+        gradient.Offset = Vector2.new((p - 0.5) * 1.6, 0)
     end
     accentRegister(shimmer, updateGlint)
-    -- Independent task fallback: some executors throttle RenderStepped, so
-    -- keep the shimmer alive on a task loop as well.
     task.spawn(function()
         while shimmer.Parent do
             task.wait(1 / 30)
@@ -746,24 +746,32 @@ local function createAccentBorder(object, thickness)
     local gradient = stroke:FindFirstChild("AccentGradient") or Instance.new("UIGradient")
     gradient.Name = "AccentGradient"
     gradient.Color = ColorSequence.new(Accent.Color, Accent.Color)
+    -- Bright short segment sweeping around the border. A single gradient
+    -- controls visibility; the stroke itself stays at a low transparency.
     gradient.Transparency = NumberSequence.new({
         NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.38, 1),
-        NumberSequenceKeypoint.new(0.47, 0.4),
-        NumberSequenceKeypoint.new(0.5, 0.22),
-        NumberSequenceKeypoint.new(0.53, 0.4),
-        NumberSequenceKeypoint.new(0.62, 1),
+        NumberSequenceKeypoint.new(0.42, 1),
+        NumberSequenceKeypoint.new(0.48, 0.15),
+        NumberSequenceKeypoint.new(0.5, 0),
+        NumberSequenceKeypoint.new(0.52, 0.15),
+        NumberSequenceKeypoint.new(0.58, 1),
         NumberSequenceKeypoint.new(1, 1)
     })
     gradient.Parent = stroke
     AccentGradients[gradient] = true
 
     local phase = math.random()
-    stroke.Transparency = 1
-    accentRegister(object, function()
+    stroke.Transparency = 0
+    local function updateBorder()
         local pulse, p = glintPulse(phase)
-        gradient.Rotation = p * 180
-        stroke.Transparency = 1 - pulse
+        gradient.Rotation = p * 360
+    end
+    accentRegister(object, updateBorder)
+    task.spawn(function()
+        while stroke.Parent do
+            task.wait(1 / 30)
+            if not accentConnection then updateBorder() end
+        end
     end)
 
     return stroke
@@ -1525,7 +1533,7 @@ function Library:create_ui()
     createAccentBorder(Container)
 
     -- The moving light lives in the glass background, not as a UI line.
-    addGlassShimmer(Container, 'WindowShimmer', 0.93)
+    addGlassShimmer(Container, 'WindowShimmer', 0.72)
 
     -- Custom background: separate rendering layer behind the Handler.
     self.BackgroundManager = BackgroundManager.new(Container, self)

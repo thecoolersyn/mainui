@@ -496,24 +496,37 @@ local function addGlassShimmer(object, name, peak)
     shimmer.Selectable = false
     shimmer.Parent = object
 
-    local brightness = 1 - (peak or 0.15) -- peak is opacity; convert to transparency
+    -- `peak` is the maximum opacity of the glow (kept low, ~0.06-0.1, so it
+    -- reads as a soft light rather than a white bar). Convert to transparency.
+    local peakOpacity = peak or 0.08
+    local center = 1 - peakOpacity
     local gradient = Instance.new('UIGradient')
-    gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
+    -- A gentle colour gradient (cool white -> soft grey -> cool white) instead
+    -- of a flat white band, so the glow has depth.
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 205, 215)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 205, 215))
+    })
+    -- Wide, smooth bell curve so the light fades gradually with no hard edge.
     gradient.Transparency = NumberSequence.new({
         NumberSequenceKeypoint.new(0, 1),
-        NumberSequenceKeypoint.new(0.38, 1),
-        NumberSequenceKeypoint.new(0.5, brightness),
-        NumberSequenceKeypoint.new(0.62, 1),
+        NumberSequenceKeypoint.new(0.12, 0.93),
+        NumberSequenceKeypoint.new(0.3, center + (1 - center) * 0.55),
+        NumberSequenceKeypoint.new(0.5, center),
+        NumberSequenceKeypoint.new(0.7, center + (1 - center) * 0.55),
+        NumberSequenceKeypoint.new(0.88, 0.93),
         NumberSequenceKeypoint.new(1, 1)
     })
     gradient.Rotation = 45
     gradient.Parent = shimmer
 
     local phase = math.random()
+    local period = 13 -- slow, calm sweep
     local function updateGlint()
-        local pulse, p = glintPulse(phase)
-        -- Move the band across the surface instead of fading the whole frame.
-        gradient.Offset = Vector2.new((p - 0.5) * 1.6, 0)
+        local pulse, p = glintPulse(phase, period)
+        -- Drift gently across the surface; smaller range = calmer movement.
+        gradient.Offset = Vector2.new((p - 0.5) * 1.0, 0)
     end
     accentRegister(shimmer, updateGlint)
     task.spawn(function()
@@ -1533,7 +1546,7 @@ function Library:create_ui()
     createAccentBorder(Container)
 
     -- The moving light lives in the glass background, not as a UI line.
-    addGlassShimmer(Container, 'WindowShimmer', 0.72)
+    addGlassShimmer(Container, 'WindowShimmer', 0.08)
 
     -- Custom background: separate rendering layer behind the Handler.
     self.BackgroundManager = BackgroundManager.new(Container, self)

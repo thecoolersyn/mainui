@@ -3414,6 +3414,19 @@ function Library:create_ui()
 
             function ModuleManager:create_dropdown(settings: any)
 
+                if settings.maximum_options == nil then
+                    settings.maximum_options = 64
+                end
+                if settings.multi_dropdown == nil then
+                    settings.multi_dropdown = false
+                end
+                if type(settings.options) ~= "table" then
+                    settings.options = {}
+                end
+                if #settings.options == 0 then
+                    settings.options = { "none" }
+                end
+
                 if not settings.Order then
                     LayoutOrderModule = LayoutOrderModule + 1;
                 end;
@@ -3598,6 +3611,12 @@ function Library:create_ui()
                 UIListLayout.Parent = Box
 
                 function DropdownManager:update(option: string)
+                    if option == nil then
+                        option = settings.options[1]
+                    end
+                    if option == nil then
+                        return
+                    end
                     -- If multi-dropdown is enabled
                     if settings.multi_dropdown then
                         -- Split the CurrentOption.Text by commas into a table
@@ -3641,10 +3660,10 @@ function Library:create_ui()
                         local CurrentTextGet = convertStringToTable(CurrentOption.Text);
 
                         local optionSkibidi = "nil";
-                        if typeof(option) ~= 'string' then
+                        if typeof(option) == 'table' and option.Name ~= nil then
                             optionSkibidi = option.Name;
                         else
-                            optionSkibidi = option;
+                            optionSkibidi = tostring(option);
                         end;
 
                         local found = false
@@ -3848,6 +3867,10 @@ function Library:create_ui()
             end
 
             function ModuleManager:create_feature(settings)
+
+                if settings.flag == nil or settings.flag == "" then
+                    settings.flag = "__feature_" .. tostring(math.random(1, 999999999))
+                end
 
                 local checked = false;
                 

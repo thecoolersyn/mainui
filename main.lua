@@ -21,8 +21,9 @@ local function fetch(name)
 end
 
 local ok, err = pcall(function()
-    -- src.lua returns the Library table and publishes GG into getgenv().
-    getgenv().MAINUI_LIBRARY = loadstring(fetch("src.lua"))()
+    -- src.lua returns the Library table and publishes it as NOREPINE_LIB,
+    -- plus the theme/accent tables and the NOREPINE_UI / NOREPINE_API globals.
+    getgenv().NOREPINE_LIB = loadstring(fetch("src.lua"))()
 
     -- test.lua builds the demo UI using that library.
     loadstring(fetch("test.lua"))()

@@ -1,0 +1,6 @@
+# Local environment / recovery artifacts
+AMD-iGPU-Recovery.log
+AMD-iGPU-Recovery.ps1
+
+# Reference video analysis (large local-only material)
+ref/

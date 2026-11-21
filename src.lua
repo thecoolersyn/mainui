@@ -47,14 +47,14 @@ local CoreGui = cloneref(game:GetService('CoreGui'))
 local Debris = cloneref(game:GetService('Debris'))
 
 local mouse = Players.LocalPlayer:GetMouse()
-local old_March = CoreGui:FindFirstChild('March')
+local old_Norepine = CoreGui:FindFirstChild('Norepine')
 
-if old_March then
-    Debris:AddItem(old_March, 0)
+if old_Norepine then
+    Debris:AddItem(old_Norepine, 0)
 end
 
-if not isfolder("March") then
-    makefolder("March")
+if not isfolder("Norepine") then
+    makefolder("Norepine")
 end
 
 
@@ -234,7 +234,10 @@ function AcrylicBlur:render(distance: number)
         end
 
         self._root.CFrame = CFrame.fromMatrix((top_left3D + bottom_right3D) / 2, workspace.CurrentCamera.CFrame.XVector, workspace.CurrentCamera.CFrame.YVector, workspace.CurrentCamera.CFrame.ZVector)
-        self._root.Mesh.Scale = Vector3.new(width, height, 0)
+        local mesh = self._root:FindFirstChildOfClass('SpecialMesh')
+        if mesh then
+            mesh.Scale = Vector3.new(width, height, 0)
+        end
     end
 
     local function on_change()
@@ -283,7 +286,7 @@ local Config = setmetatable({
     save = function(self: any, file_name: any, config: any)
         local success_save, result = pcall(function()
             local flags = HttpService:JSONEncode(config)
-            writefile('March/'..file_name..'.json', flags)
+            writefile('Norepine/'..file_name..'.json', flags)
         end)
     
         if not success_save then
@@ -292,13 +295,13 @@ local Config = setmetatable({
     end,
     load = function(self: any, file_name: any, config: any)
         local success_load, result = pcall(function()
-            if not isfile('March/'..file_name..'.json') then
+            if not isfile('Norepine/'..file_name..'.json') then
                 self:save(file_name, config)
         
                 return
             end
         
-            local flags = readfile('March/'..file_name..'.json')
+            local flags = readfile('Norepine/'..file_name..'.json')
         
             if not flags then
                 self:save(file_name, config)
@@ -326,24 +329,47 @@ local Config = setmetatable({
 }, Config)
 
 -- ========================================================================= --
---  ZENTHRA :: PURE BLACK THEME                                              --
+--  NOREPINE :: PURE BLACK THEME                                              --
 --  Every surface colour below is neutral (R = G = B). No blue/purple tint.  --
 -- ========================================================================= --
 local Theme = {
     Name       = "Pure Black",
-    Window     = Color3.fromRGB(5, 5, 5),        -- main window
-    Panel      = Color3.fromRGB(12, 12, 12),     -- modules / tabs / notifications
-    PanelHover = Color3.fromRGB(20, 20, 20),     -- hovered panels
-    Panel2     = Color3.fromRGB(16, 16, 16),     -- search box / inputs
-    Track      = Color3.fromRGB(32, 32, 32),     -- toggle & slider tracks
-    Knob       = Color3.fromRGB(8, 8, 8),        -- toggle knob when ON
+    Window     = Color3.fromRGB(14, 14, 14),     -- main window (opaque)
+    Panel      = Color3.fromRGB(32, 32, 32),     -- modules / tabs / notifications
+    PanelHover = Color3.fromRGB(40, 40, 40),     -- hovered panels
+    Panel2     = Color3.fromRGB(28, 28, 28),     -- search box / inputs
+    Track      = Color3.fromRGB(42, 42, 42),     -- toggle & slider tracks
+    Knob       = Color3.fromRGB(14, 14, 14),     -- toggle knob when ON
     Muted      = Color3.fromRGB(140, 140, 140),  -- toggle knob when OFF / slider fill
-    Stroke     = Color3.fromRGB(38, 38, 38),     -- resting outlines
-    Text       = Color3.fromRGB(245, 245, 245),
-    TextSoft   = Color3.fromRGB(215, 215, 215),
+    Stroke     = Color3.fromRGB(46, 46, 46),     -- resting outlines
+    Text       = Color3.fromRGB(246, 246, 249),
+    TextSoft   = Color3.fromRGB(220, 220, 220),
     TextBody   = Color3.fromRGB(170, 170, 170),
-    TextDim    = Color3.fromRGB(136, 136, 136),
-    Accent     = Color3.fromRGB(245, 245, 245),
+    TextDim    = Color3.fromRGB(150, 150, 150),
+    Accent     = Color3.fromRGB(246, 246, 249),
+}
+
+-- Lucide icons used by notifications and module controls.
+local ICONS = {
+    Bell     = "rbxassetid://10709775704",
+    BellRing = "rbxassetid://10709775560",
+    Check    = "rbxassetid://10709790644",
+    X        = "rbxassetid://10747384394",
+}
+
+-- Lucide tab icons (same set used by the original Norepine build).
+local TAB_ICONS = {
+    Combat     = "rbxassetid://10734975486",
+    Detections = "rbxassetid://10734951847",
+    Visuals    = "rbxassetid://10723346959",
+    Player     = "rbxassetid://10747373176",
+    Sword      = "rbxassetid://10734909540",
+    Avatar     = "rbxassetid://10747373426",
+    World      = "rbxassetid://10723404337",
+    Blatant    = "rbxassetid://10734962068",
+    Misc       = "rbxassetid://10734950309",
+    Configs    = "rbxassetid://10723387563",
+    Gui        = "rbxassetid://10709781717",
 }
 
 local Accent = {
@@ -354,8 +380,8 @@ local Accent = {
     Glow      = 0.25
 }
 
-getgenv().MARCH_ACCENT = Accent
-getgenv().ZENTHRA_THEME = Theme
+getgenv().NOREPINE_ACCENT = Accent
+getgenv().NOREPINE_THEME = Theme
 
 local function accent()
     return Accent.Color
@@ -409,6 +435,14 @@ local function accentStart()
     end)
 end
 
+-- Smooth 0 -> 1 -> 0 pulse (flat at both ends) so glints fade in and out
+-- instead of sliding across and snapping back at the end of the cycle.
+local function glintPulse(phase, period)
+    local p = ((tick() / math.max(0.5, period or (Accent.Speed * 3))) + (phase or 0)) % 1
+    local s = math.sin(math.pi * p)
+    return s * s, p
+end
+
 local function accentRegister(object, update)
     AccentTracks[{ object = object, update = update }] = true
     accentStart()
@@ -444,6 +478,205 @@ function Accent.Shutdown()
     table.clear(AccentTracks)
 end
 
+-- A soft light band that drifts across a surface. In the reference this is
+-- part of the glass background itself, not a drawn line on top of the UI.
+local function addGlassShimmer(object, name, peak)
+    local shimmer = Instance.new('Frame')
+    shimmer.Name = name or 'GlassShimmer'
+    shimmer.Size = UDim2.fromScale(1, 1)
+    shimmer.BackgroundColor3 = Color3.new(1, 1, 1)
+    shimmer.BackgroundTransparency = 0
+    shimmer.BorderSizePixel = 0
+    shimmer.ZIndex = 0
+    shimmer.Active = false
+    shimmer.Selectable = false
+    shimmer.Parent = object
+
+    local gradient = Instance.new('UIGradient')
+    gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.32, 1),
+        NumberSequenceKeypoint.new(0.5, peak or 0.9),
+        NumberSequenceKeypoint.new(0.68, 1),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    gradient.Rotation = 45
+    gradient.Parent = shimmer
+
+    local phase = math.random()
+    shimmer.BackgroundTransparency = 1
+    accentRegister(shimmer, function()
+        local pulse, p = glintPulse(phase)
+        shimmer.BackgroundTransparency = 1 - pulse
+        gradient.Offset = Vector2.new((p - 0.5) * 0.35, 0)
+    end)
+
+    return shimmer
+end
+
+-- A fixed white light band laid over a surface. Uses the same proven
+-- UIGradient-transparency trick as the window shimmer, but never moves.
+local function addStaticSheen(parent, name, peak, rotation)
+    local sheen = Instance.new('Frame')
+    sheen.Name = name or 'CardSheen'
+    sheen.Size = UDim2.fromScale(1, 1)
+    sheen.BackgroundColor3 = Color3.new(1, 1, 1)
+    sheen.BackgroundTransparency = 0
+    sheen.BorderSizePixel = 0
+    sheen.ZIndex = 0
+    sheen.Active = false
+    sheen.Selectable = false
+    sheen.Parent = parent
+
+    local gradient = Instance.new('UIGradient')
+    gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 1),
+        NumberSequenceKeypoint.new(0.28, 0.95),
+        NumberSequenceKeypoint.new(0.5, peak or 0.55),
+        NumberSequenceKeypoint.new(0.72, 0.95),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    gradient.Rotation = rotation or 40
+    gradient.Parent = sheen
+
+    return sheen
+end
+
+-- Card face: an explicit overlay layer so the grey top-half gradient always
+-- renders (a UIGradient directly on the card is ignored by this runtime).
+local function addCardFace(parent, name, corner)
+    local face = Instance.new('Frame')
+    face.Name = name or 'CardFace'
+    face.Size = UDim2.fromScale(1, 1)
+    face.BackgroundColor3 = Color3.new(1, 1, 1)
+    face.BackgroundTransparency = 0
+    face.BorderSizePixel = 0
+    face.ZIndex = 0
+    face.Active = false
+    face.Selectable = false
+    face.Parent = parent
+
+    local faceCorner = Instance.new('UICorner')
+    faceCorner.CornerRadius = UDim.new(0, corner or 8)
+    faceCorner.Parent = face
+
+    local gradient = Instance.new('UIGradient')
+    gradient.Color = ColorSequence.new(Color3.fromRGB(58, 58, 58), Color3.fromRGB(10, 10, 10))
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.1),
+        NumberSequenceKeypoint.new(0.35, 0.5),
+        NumberSequenceKeypoint.new(0.7, 1),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    gradient.Rotation = 45
+    gradient.Parent = face
+
+    return face
+end
+
+local KEY_NAMES = {
+    One = '1', Two = '2', Three = '3', Four = '4', Five = '5',
+    Six = '6', Seven = '7', Eight = '8', Nine = '9', Zero = '0',
+    LeftShift = 'LShift', RightShift = 'RShift',
+    LeftControl = 'LCtrl', RightControl = 'RCtrl',
+    LeftAlt = 'LAlt', RightAlt = 'RAlt',
+    Return = 'Enter', Escape = 'Esc',
+}
+
+local function keyName(value)
+    local name = tostring(value):gsub('Enum%.KeyCode%.', '')
+    return KEY_NAMES[name] or name
+end
+
+-- Norepine rebind chip: small dark rounded square with a faint outline.
+-- It is a single TextLabel that grows with its text (min 16x16).
+local function makeRebindChip(parent, text)
+    local chip = Instance.new('TextLabel')
+    chip.Name = 'RebindChip'
+    chip.AutomaticSize = Enum.AutomaticSize.X
+    chip.Size = UDim2.fromOffset(16, 16)
+    chip.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+    chip.BackgroundTransparency = 0.1
+    chip.BorderSizePixel = 0
+    chip.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+    chip.Text = text or '-'
+    chip.TextSize = 10
+    chip.TextColor3 = Color3.fromRGB(235, 235, 235)
+    chip.TextXAlignment = Enum.TextXAlignment.Center
+    chip.TextYAlignment = Enum.TextYAlignment.Center
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 4)
+    corner.Parent = chip
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Color = Color3.new(1, 1, 1)
+    stroke.Transparency = 0.8
+    stroke.Thickness = 1
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = chip
+
+    local pad = Instance.new('UIPadding')
+    pad.PaddingLeft = UDim.new(0, 5)
+    pad.PaddingRight = UDim.new(0, 5)
+    pad.Parent = chip
+
+    local limit = Instance.new('UISizeConstraint')
+    limit.MinSize = Vector2.new(16, 16)
+    limit.Parent = chip
+
+    chip.Parent = parent
+    return chip
+end
+
+-- Module card face: a soft light falloff from the top-left corner into the
+-- flat near-black card, like the Norepine module cards.
+local function addModuleFace(parent, name)
+    -- Solid backing first so the window shimmer cannot show through unevenly
+    -- and make only one card look brighter than the others.
+    local backing = Instance.new('Frame')
+    backing.Name = 'CardBacking'
+    backing.Size = UDim2.fromScale(1, 1)
+    backing.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
+    backing.BackgroundTransparency = 0
+    backing.BorderSizePixel = 0
+    backing.ZIndex = 0
+    backing.Parent = parent
+    local backingCorner = Instance.new('UICorner')
+    backingCorner.CornerRadius = UDim.new(0, 8)
+    backingCorner.Parent = backing
+
+    local face = Instance.new('Frame')
+    face.Name = name or 'CardFace'
+    face.Size = UDim2.fromScale(1, 1)
+    face.BackgroundColor3 = Color3.new(1, 1, 1)
+    face.BackgroundTransparency = 1
+    face.BorderSizePixel = 0
+    face.ZIndex = 0
+    face.Active = false
+    face.Selectable = false
+    face.Parent = parent
+
+    local faceCorner = Instance.new('UICorner')
+    faceCorner.CornerRadius = UDim.new(0, 8)
+    faceCorner.Parent = face
+
+    local gradient = Instance.new('UIGradient')
+    gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1, 1, 1))
+    gradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0.62),
+        NumberSequenceKeypoint.new(0.35, 0.82),
+        NumberSequenceKeypoint.new(0.7, 1),
+        NumberSequenceKeypoint.new(1, 1)
+    })
+    gradient.Rotation = 30
+    gradient.Parent = face
+
+    return face
+end
+
 local function createAccentLine(parent, position, width, name)
     local clip = Instance.new("Frame")
     clip.Name = name
@@ -468,15 +701,17 @@ local function createAccentLine(parent, position, width, name)
     segment.Size = UDim2.fromOffset(math.max(40, math.floor(width * 0.6)), 1)
     segment.Position = UDim2.new(0, 0, 0.5, -0.5)
     segment.BackgroundColor3 = Accent.Color
-    segment.BackgroundTransparency = 0
+    segment.BackgroundTransparency = 1
     segment.BorderSizePixel = 0
     segment.Parent = clip
     accentGradient().Parent = segment
 
-    accentRegister(clip, function(t)
+    local phase = math.random()
+    accentRegister(clip, function()
+        local pulse, p = glintPulse(phase, Accent.Speed * 2)
         local length = segment.Size.X.Offset
-        local x = -length * 0.5 + t * (width + length)
-        segment.Position = UDim2.new(0, x, 0.5, -0.5)
+        segment.Position = UDim2.new(0, (width - length) * (0.15 + 0.7 * p), 0.5, -0.5)
+        segment.BackgroundTransparency = 1 - pulse
     end)
 end
 
@@ -512,8 +747,12 @@ local function createAccentBorder(object, thickness)
     gradient.Parent = stroke
     AccentGradients[gradient] = true
 
-    accentRegister(object, function(t)
-        gradient.Rotation = (t * 360) % 360
+    local phase = math.random()
+    stroke.Transparency = 1
+    accentRegister(object, function()
+        local pulse, p = glintPulse(phase)
+        gradient.Rotation = p * 180
+        stroke.Transparency = 1 - pulse
     end)
 
     return stroke
@@ -544,7 +783,7 @@ Library.__index = Library
 --  refresh and persistence through the library's original Config system.   --
 -- ========================================================================= --
 
-local BACKGROUND_FOLDER = 'March/backgrounds'
+local BACKGROUND_FOLDER = 'Norepine/backgrounds'
 
 local function bg_notify(title, text, duration)
     pcall(function()
@@ -574,7 +813,7 @@ function BackgroundManager.new(container, library)
     }, BackgroundManager)
 
     pcall(function()
-        if not isfolder('March') then makefolder('March') end
+        if not isfolder('Norepine') then makefolder('Norepine') end
         if not isfolder(BACKGROUND_FOLDER) then makefolder(BACKGROUND_FOLDER) end
     end)
 
@@ -1004,15 +1243,29 @@ function Library.new()
     return self
 end
 
--- Create Notification Container
+-- Create Notification Container (unique name so re-injections clean up after
+-- themselves instead of stacking hidden toast layers).
+local NOTIF_NAME = "NorepineNotifications"
+pcall(function()
+    for _, obj in ipairs(CoreGui.RobloxGui:GetDescendants()) do
+        if obj.Name == NOTIF_NAME then
+            obj:Destroy()
+        end
+    end
+end)
+
+local NotifGui = CoreGui.RobloxGui:FindFirstChild('NorepineNotifGui') or Instance.new('ScreenGui', CoreGui.RobloxGui)
+NotifGui.Name = 'NorepineNotifGui'
+NotifGui.ResetOnSpawn = false
+
 local NotificationContainer = Instance.new("Frame")
-NotificationContainer.Name = "RobloxCoreGuis"
-NotificationContainer.Size = UDim2.new(0, 300, 0, 0)  -- Fixed width (300px), dynamic height (Y)
-NotificationContainer.Position = UDim2.new(0.8, 0, 0, 10)  -- Right side, offset by 10 from top
+NotificationContainer.Name = NOTIF_NAME
+NotificationContainer.Size = UDim2.new(0, 300, 0, 0)
+NotificationContainer.Position = UDim2.new(1, -310, 0, 12)
 NotificationContainer.BackgroundTransparency = 1
-NotificationContainer.ClipsDescendants = false;
-NotificationContainer.Parent = game:GetService("CoreGui").RobloxGui:FindFirstChild("RobloxCoreGuis") or Instance.new("ScreenGui", game:GetService("CoreGui").RobloxGui)
+NotificationContainer.ClipsDescendants = false
 NotificationContainer.AutomaticSize = Enum.AutomaticSize.Y
+NotificationContainer.Parent = NotifGui
 
 -- UIListLayout to arrange notifications vertically
 local UIListLayout = Instance.new("UIListLayout")
@@ -1021,98 +1274,138 @@ UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.Parent = NotificationContainer
 
--- Function to create notifications
+-- Norepine-style toast: Lucide bell, status check/x and a close button.
 function Library.SendNotification(settings)
-    -- Create the notification frame (this will be managed by UIListLayout)
+    settings = settings or {}
+    local isOn = settings.state == true
+    local stateIcon
+    if settings.kind == "bell" then
+        stateIcon = ICONS.Bell
+    elseif settings.kind == "check" or settings.kind == "x" then
+        stateIcon = (settings.kind == "check" and ICONS.Check or ICONS.X)
+    else
+        stateIcon = isOn and ICONS.Check or ICONS.X
+    end
+
     local Notification = Instance.new("Frame")
-    Notification.Size = UDim2.new(1, 0, 0, 60)  -- Width = 100% of NotificationContainer's width, dynamic height (Y)
-    Notification.BackgroundTransparency = 1  -- Outer frame is transparent for layout to work
-    Notification.BorderSizePixel = 0
     Notification.Name = "Notification"
-    Notification.Parent = NotificationContainer  -- Parent it to your NotificationContainer (the parent of the list layout)
-    Notification.AutomaticSize = Enum.AutomaticSize.Y  -- Allow this frame to resize based on child height
+    Notification.Size = UDim2.new(1, 0, 0, 62)
+    Notification.BackgroundTransparency = 1
+    Notification.BorderSizePixel = 0
+    Notification.AutomaticSize = Enum.AutomaticSize.Y
+    Notification.Parent = NotificationContainer
 
-    -- Add rounded corners to outer frame
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 4)
-    UICorner.Parent = Notification
+    local Card = Instance.new("Frame")
+    Card.Name = "Card"
+    Card.Size = UDim2.new(1, 0, 0, 62)
+    Card.AutomaticSize = Enum.AutomaticSize.Y
+    Card.BackgroundColor3 = Theme.Panel
+    Card.BackgroundTransparency = 0
+    Card.BorderSizePixel = 0
+    Card.Parent = Notification
 
-    -- Create the inner frame for the notification's content
-    local InnerFrame = Instance.new("Frame")
-    InnerFrame.Size = UDim2.new(1, 0, 0, 60)  -- Start with an initial height, width will adapt
-    InnerFrame.Position = UDim2.new(0, 0, 0, 0)  -- Positioned inside the outer notification frame
-    InnerFrame.BackgroundColor3 = Theme.Panel
-    InnerFrame.BackgroundTransparency = 0.1
-    InnerFrame.BorderSizePixel = 0
-    InnerFrame.Name = "InnerFrame"
-    InnerFrame.Parent = Notification
-    InnerFrame.AutomaticSize = Enum.AutomaticSize.Y  -- Automatically resize based on its content
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Card
 
-    -- Add rounded corners to the inner frame
-    local InnerUICorner = Instance.new("UICorner")
-    InnerUICorner.CornerRadius = UDim.new(0, 4)
-    InnerUICorner.Parent = InnerFrame
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Accent.BaseColor
+    Stroke.Transparency = 0.35
+    Stroke.Thickness = 1
+    Stroke.Parent = Card
 
-    -- Title Label (with automatic size support)
+    local TopStrip = Instance.new("Frame")
+    TopStrip.Name = "TopStrip"
+    TopStrip.Size = UDim2.new(1, 0, 0, 2)
+    TopStrip.Position = UDim2.new(0, 0, 0, 0)
+    TopStrip.BackgroundColor3 = settings.strip or Color3.fromRGB(235, 90, 150)
+    TopStrip.BorderSizePixel = 0
+    TopStrip.Parent = Card
+
+    local StateIcon
+    if settings.kind == "bell" then
+        StateIcon = ICONS.Bell
+    elseif settings.kind == "check" or settings.kind == "x" then
+        StateIcon = (settings.kind == "check" and ICONS.Check or ICONS.X)
+    else
+        StateIcon = isOn and ICONS.Check or ICONS.X
+    end
+
+    local Icon = Instance.new("ImageLabel")
+    Icon.Name = "Icon"
+    Icon.Image = StateIcon
+    Icon.ImageColor3 = Color3.new(1, 1, 1)
+    Icon.Size = UDim2.fromOffset(18, 18)
+    Icon.Position = UDim2.fromOffset(12, 12)
+    Icon.BackgroundTransparency = 1
+    Icon.Parent = Card
+
     local Title = Instance.new("TextLabel")
-    Title.Text = settings.title or "Notification Title"
-    Title.TextColor3 = Theme.TextSoft
+    Title.Text = settings.title or "Notification"
+    Title.TextColor3 = Theme.Text
     Title.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-    Title.TextSize = 14
-    Title.Size = UDim2.new(1, -10, 0, 20)  -- Width is 1 (100% of parent width), height is fixed initially
-    Title.Position = UDim2.new(0, 5, 0, 5)
+    Title.TextSize = 12
+    Title.Size = UDim2.new(1, -76, 0, 16)
+    Title.Position = UDim2.fromOffset(38, 10)
     Title.BackgroundTransparency = 1
     Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.TextYAlignment = Enum.TextYAlignment.Center
-    Title.TextWrapped = true  -- Enable wrapping
-    Title.AutomaticSize = Enum.AutomaticSize.Y  -- Allow the title to resize based on content
-    Title.Parent = InnerFrame
+    Title.Parent = Card
 
-    -- Body Text (with automatic size support)
     local Body = Instance.new("TextLabel")
-    Body.Text = settings.text or "This is the body of the notification."
+    Body.Text = settings.text or ""
     Body.TextColor3 = Theme.TextBody
     Body.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-    Body.TextSize = 12
-    Body.Size = UDim2.new(1, -10, 0, 30)  -- Width is 1 (100% of parent width), height is fixed initially
-    Body.Position = UDim2.new(0, 5, 0, 25)
+    Body.TextSize = 10
+    Body.Size = UDim2.new(1, -76, 0, 16)
+    Body.Position = UDim2.fromOffset(38, 28)
     Body.BackgroundTransparency = 1
     Body.TextXAlignment = Enum.TextXAlignment.Left
-    Body.TextYAlignment = Enum.TextYAlignment.Top
-    Body.TextWrapped = true  -- Enable wrapping for long text
-    Body.AutomaticSize = Enum.AutomaticSize.Y  -- Allow the body text to resize based on content
-    Body.Parent = InnerFrame
+    Body.TextWrapped = true
+    Body.AutomaticSize = Enum.AutomaticSize.Y
+    Body.Parent = Card
 
-    -- Force the size to adjust after the text is fully loaded and wrapped
-    task.spawn(function()
-        wait(0.1)  -- Allow text wrapping to finish
-        -- Adjust inner frame size based on content
-        local totalHeight = Title.TextBounds.Y + Body.TextBounds.Y + 10  -- Add padding
-        InnerFrame.Size = UDim2.new(1, 0, 0, totalHeight)  -- Resize the inner frame
-    end)
+    local Underline = Instance.new("Frame")
+    Underline.Name = "Underline"
+    Underline.Size = UDim2.new(1, -38, 0, 1)
+    Underline.Position = UDim2.fromOffset(38, 48)
+    Underline.BackgroundColor3 = Color3.fromRGB(220, 180, 70)
+    Underline.BackgroundTransparency = 0.25
+    Underline.BorderSizePixel = 0
+    Underline.Parent = Card
 
-    -- Use task.spawn to ensure the notification tweening happens asynchronously
+    local Close = Instance.new("TextButton")
+    Close.Name = "Close"
+    Close.Text = "×"
+    Close.TextColor3 = Theme.TextDim
+    Close.Font = Enum.Font.SourceSans
+    Close.TextSize = 16
+    Close.Size = UDim2.fromOffset(16, 16)
+    Close.Position = UDim2.new(1, -22, 0, 12)
+    Close.BackgroundTransparency = 1
+    Close.AutoButtonColor = false
+    Close.Parent = Card
+
+    local dismissed = false
+    local function dismiss()
+        if dismissed then return end
+        dismissed = true
+        local out = TweenService:Create(Card, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+            Position = UDim2.new(1, 320, 0, 0),
+            BackgroundTransparency = 1
+        })
+        out:Play()
+        out.Completed:Connect(function() Notification:Destroy() end)
+    end
+    Close.MouseButton1Click:Connect(dismiss)
+
     task.spawn(function()
-        -- Tween In the Notification (inner frame)
-        local tweenIn = TweenService:Create(InnerFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-            Position = UDim2.new(0, 0, 0, 10 + NotificationContainer.Size.Y.Offset)
+        Card.Position = UDim2.new(1, 320, 0, 0)
+        local tweenIn = TweenService:Create(Card, TweenInfo.new(0.45, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            Position = UDim2.new(0, 0, 0, 0)
         })
         tweenIn:Play()
-
-        -- Wait for the duration before tweening out
-        local duration = settings.duration or 5  -- Default to 5 seconds if not provided
-        wait(duration)
-
-        -- Tween Out the Notification (inner frame) to the right side of the screen
-        local tweenOut = TweenService:Create(InnerFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-            Position = UDim2.new(1, 310, 0, 10 + NotificationContainer.Size.Y.Offset)  -- Move to the right off-screen
-        })
-        tweenOut:Play()
-
-        -- Remove the notification after it is done tweening out
-        tweenOut.Completed:Connect(function()
-            Notification:Destroy()
-        end)
+        task.wait(settings.duration or 4)
+        dismiss()
     end)
 end
 
@@ -1164,17 +1457,17 @@ end
 
 
 function Library:create_ui()
-    local old_March = CoreGui:FindFirstChild('March')
+    local old_Norepine = CoreGui:FindFirstChild('Norepine')
 
-    if old_March then
-        Debris:AddItem(old_March, 0)
+    if old_Norepine then
+        Debris:AddItem(old_Norepine, 0)
     end
 
-    local March = Instance.new('ScreenGui')
-    March.ResetOnSpawn = false
-    March.Name = 'March'
-    March.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    March.Parent = CoreGui
+    local Norepine = Instance.new('ScreenGui')
+    Norepine.ResetOnSpawn = false
+    Norepine.Name = 'Norepine'
+    Norepine.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    Norepine.Parent = CoreGui
     
     local Container = Instance.new('Frame')
     Container.ClipsDescendants = true
@@ -1187,13 +1480,16 @@ function Library:create_ui()
     Container.Size = UDim2.new(0, 0, 0, 0)
     Container.Active = true
     Container.BorderSizePixel = 0
-    Container.Parent = March
+    Container.Parent = Norepine
     
     local UICorner = Instance.new('UICorner')
     UICorner.CornerRadius = UDim.new(0, 12)
     UICorner.Parent = Container
     
     createAccentBorder(Container)
+
+    -- The moving light lives in the glass background, not as a UI line.
+    addGlassShimmer(Container, 'WindowShimmer', 0.93)
 
     -- Custom background: separate rendering layer behind the Handler.
     self.BackgroundManager = BackgroundManager.new(Container, self)
@@ -1206,6 +1502,36 @@ function Library:create_ui()
     Handler.BorderSizePixel = 0
     Handler.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Handler.Parent = Container
+
+    -- Faint white glints that drift to random spots across the glass.
+    local glints = {}
+    for _ = 1, 12 do
+        local dot = Instance.new('Frame')
+        dot.Name = 'Glint'
+        dot.Size = UDim2.fromOffset(2, 2)
+        dot.Position = UDim2.fromOffset(math.random(10, 680), math.random(10, 460))
+        dot.BackgroundColor3 = Color3.new(1, 1, 1)
+        dot.BackgroundTransparency = math.random(82, 95) / 100
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 0
+        dot.Parent = Handler
+        local corner = Instance.new('UICorner')
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = dot
+        table.insert(glints, dot)
+    end
+    task.spawn(function()
+        while Handler.Parent do
+            task.wait(math.random(15, 40) / 10)
+            for _, dot in ipairs(glints) do
+                if dot.Parent then
+                    TweenService:Create(dot, TweenInfo.new(math.random(10, 25) / 10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                        Position = UDim2.fromOffset(math.random(10, 680), math.random(10, 460))
+                    }):Play()
+                end
+            end
+        end
+    end)
     
     local Tabs = Instance.new('ScrollingFrame')
     Tabs.ScrollBarImageTransparency = 1
@@ -1231,7 +1557,7 @@ function Library:create_ui()
     ClientName.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
     ClientName.TextColor3 = Theme.Text
     ClientName.TextTransparency = 0
-    ClientName.Text = 'Zenthra'
+    ClientName.Text = 'Norepine'
     ClientName.Name = 'ClientName'
     ClientName.Size = UDim2.fromOffset(0, 16)
     ClientName.AutomaticSize = Enum.AutomaticSize.X
@@ -1246,20 +1572,11 @@ function Library:create_ui()
     ClientName.Parent = Handler
 
     local font_params = Instance.new('GetTextBoundsParams')
-    font_params.Text = 'Zenthra'
+    font_params.Text = 'Norepine'
     font_params.Font = ClientName.FontFace
     font_params.Size = 14
     font_params.Width = 10000
     local z_width = TextService:GetTextBoundsAsync(font_params).X
-
-    local TitleUnderline = Instance.new('Frame')
-    TitleUnderline.Name = 'TitleUnderline'
-    TitleUnderline.Size = UDim2.fromOffset(z_width, 1)
-    TitleUnderline.Position = UDim2.fromOffset(20, 35)
-    TitleUnderline.BackgroundColor3 = accent()
-    TitleUnderline.BackgroundTransparency = 0
-    TitleUnderline.BorderSizePixel = 0
-    TitleUnderline.Parent = Handler
 
     local SubTitle = Instance.new('TextLabel')
     SubTitle.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -1286,9 +1603,6 @@ function Library:create_ui()
     Divider.BackgroundColor3 = Accent.BaseColor
     Divider.Parent = Handler
 
-    createAccentLine(Handler, UDim2.new(0.026, 0, 0.088, 0), 140, 'BrandSeparator')
-    createAccentLine(Handler, UDim2.new(0.026, 0, 0.11, 0), 660, 'ContentSeparator')
-    
     local ContentContainer = Instance.new('Frame')
     ContentContainer.Name = 'ContentContainer'
     ContentContainer.Position = UDim2.fromOffset(170, 60)
@@ -1301,7 +1615,6 @@ function Library:create_ui()
     ContentCorner.CornerRadius = UDim.new(0, 6)
     ContentCorner.Parent = ContentContainer
 
-    createAccentBorder(ContentContainer)
 
     local Sections = Instance.new('Folder')
     Sections.Name = 'Sections'
@@ -1309,10 +1622,10 @@ function Library:create_ui()
     
     local SearchFrame = Instance.new('Frame')
     SearchFrame.Name = 'SearchFrame'
-    SearchFrame.Position = UDim2.fromOffset(440, 17)
-    SearchFrame.Size = UDim2.fromOffset(160, 25)
+    SearchFrame.Position = UDim2.fromOffset(418, 16)
+    SearchFrame.Size = UDim2.fromOffset(190, 26)
     SearchFrame.BackgroundColor3 = Theme.Panel2
-    SearchFrame.BackgroundTransparency = 0.25
+    SearchFrame.BackgroundTransparency = 0.1
     SearchFrame.BorderSizePixel = 0
     SearchFrame.Parent = Handler
 
@@ -1327,7 +1640,7 @@ function Library:create_ui()
     SearchStroke.Parent = SearchFrame
 
     local SearchIcon = Instance.new('ImageLabel')
-    SearchIcon.Image = 'https://raw.githubusercontent.com/thecoolersyn/mainui/main/assets/search.png'
+    SearchIcon.Image = 'rbxassetid://7734052925'
     SearchIcon.ImageColor3 = Theme.TextDim
     SearchIcon.Size = UDim2.fromOffset(12, 12)
     SearchIcon.Position = UDim2.fromOffset(8, 7)
@@ -1337,7 +1650,7 @@ function Library:create_ui()
     local SearchBox = Instance.new('TextBox')
     SearchBox.Name = 'SearchInput'
     SearchBox.Position = UDim2.fromOffset(22, 0)
-    SearchBox.Size = UDim2.fromOffset(132, 25)
+    SearchBox.Size = UDim2.fromOffset(162, 26)
     SearchBox.BackgroundTransparency = 1
     SearchBox.Font = Enum.Font.SourceSans
     SearchBox.TextSize = 10
@@ -1360,19 +1673,40 @@ function Library:create_ui()
     Minimize.Size = UDim2.fromOffset(24, 24)
     Minimize.BorderSizePixel = 0
     Minimize.TextSize = 18
+    Minimize.TextTransparency = 1
     Minimize.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Minimize.Parent = Handler
 
+    local MinimizeIcon = Instance.new('ImageLabel')
+    MinimizeIcon.Image = 'rbxassetid://10734896206'
+    MinimizeIcon.ImageColor3 = Theme.TextDim
+    MinimizeIcon.Size = UDim2.fromOffset(14, 14)
+    MinimizeIcon.Position = UDim2.fromScale(0.5, 0.5)
+    MinimizeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+    MinimizeIcon.BackgroundTransparency = 1
+    MinimizeIcon.Parent = Minimize
+
     ClientName.MouseButton1Click:Connect(function()
-        self._ui_open = not self._ui_open
-        self:change_visiblity(self._ui_open)
+        self:toggle_visibility()
     end)
 
     local UIScale = Instance.new('UIScale')
     UIScale.Scale = 622 / 698
     UIScale.Parent = Container    
     
-    self._ui = March
+    self._ui = Norepine
+    self._modules = {}
+
+    -- Search filters module cards by the start of their title. Typing "au"
+    -- keeps "Auto Spam" / "Auto Parry" and hides everything else.
+    local function apply_search()
+        local query = SearchBox.Text:lower()
+        for _, entry in ipairs(self._modules) do
+            local title = entry.title:lower()
+            entry.object.Visible = (query == "" or title:sub(1, #query) == query)
+        end
+    end
+    Connections['module_search'] = SearchBox:GetPropertyChangedSignal('Text'):Connect(apply_search)
 
     local function on_drag(input: InputObject, process: boolean)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
@@ -1435,26 +1769,57 @@ function Library:create_ui()
     end;
 
     function self:UIVisiblity()
-        March.Enabled = not March.Enabled;
+        Norepine.Enabled = not Norepine.Enabled;
     end;
 
     function self:change_visiblity(state: boolean)
+        self._ui_open = state
         if state then
+            -- Restore full window: show all content, brand back at top-left.
+            SubTitle.Visible = true
+            ClientName.AnchorPoint = Vector2.new(0, 0.5)
+            ClientName.Position = UDim2.fromOffset(20, 21)
+            for _, name in ipairs({ 'Tabs', 'SearchFrame', 'Minimize', 'Divider', 'ContentContainer' }) do
+                local obj = Handler:FindFirstChild(name)
+                if obj and obj:IsA('GuiObject') then obj.Visible = true end
+            end
+            for _, section in ipairs(Sections:GetChildren()) do
+                if section:IsA('GuiObject') then section.Visible = true end
+            end
             TweenService:Create(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                 Size = UDim2.fromOffset(698, 479)
             }):Play()
         else
+            -- Minimized: only the centered brand, nothing else.
+            SubTitle.Visible = false
+            for _, name in ipairs({ 'Tabs', 'SearchFrame', 'Minimize', 'Divider', 'ContentContainer' }) do
+                local obj = Handler:FindFirstChild(name)
+                if obj and obj:IsA('GuiObject') then obj.Visible = false end
+            end
+            for _, section in ipairs(Sections:GetChildren()) do
+                if section:IsA('GuiObject') then section.Visible = false end
+            end
+            ClientName.Position = UDim2.fromOffset(52, 26)
+            ClientName.AnchorPoint = Vector2.new(0.5, 0.5)
             TweenService:Create(Container, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                 Size = UDim2.fromOffset(104.5, 52)
             }):Play()
         end
+    end
+
+    -- Single source of truth for every open/close entry point (Insert key,
+    -- brand click, minimize dash and the "Toggle key" feature).
+    function self:toggle_visibility()
+        self._ui_open = not self._ui_open
+        self:change_visiblity(self._ui_open)
+        return self._ui_open
     end
     
 
     function self:load()
         local content = {}
     
-        for _, object in March:GetDescendants() do
+        for _, object in Norepine:GetDescendants() do
             if not object:IsA('ImageLabel') then
                 continue
             end
@@ -1495,24 +1860,34 @@ function Library:create_ui()
             end
 
             local bar = object:FindFirstChild('TabBar')
+            local icon = object:FindFirstChild('Icon')
+            local face = object:FindFirstChild('TabFace')
 
             if object == tab then
+                if face then face.Visible = true end
                 if bar then
                     TweenService:Create(bar, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                         BackgroundTransparency = 0
                     }):Play()
                 end
                 TweenService:Create(object, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                    BackgroundTransparency = 0.88
+                    BackgroundTransparency = 0.05
                 }):Play()
                 TweenService:Create(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                     TextTransparency = 0.05,
                     TextColor3 = Theme.Text
                 }):Play()
+                if icon then
+                    TweenService:Create(icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                        ImageTransparency = 0.1,
+                        ImageColor3 = Theme.Text
+                    }):Play()
+                end
 
                 continue
             end
 
+            if face then face.Visible = false end
             if bar then
                 TweenService:Create(bar, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
                     BackgroundTransparency = 1
@@ -1524,9 +1899,15 @@ function Library:create_ui()
                 }):Play()
             end
             TweenService:Create(object.TextLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                TextTransparency = 0.55,
+                TextTransparency = 0.45,
                 TextColor3 = Theme.TextDim
             }):Play()
+            if icon then
+                TweenService:Create(icon, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                    ImageTransparency = 0.45,
+                    ImageColor3 = Theme.TextDim
+                }):Play()
+            end
         end
     end
 
@@ -1555,6 +1936,7 @@ function Library:create_ui()
 
         local font_size = TextService:GetTextBoundsAsync(font_params)
         local first_tab = not Tabs:FindFirstChild('Tab')
+        local icon_id = icon or TAB_ICONS[title]
 
         local Tab = Instance.new('TextButton')
         Tab.FontFace = Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
@@ -1564,7 +1946,7 @@ function Library:create_ui()
         Tab.AutoButtonColor = false
         Tab.BackgroundTransparency = 1
         Tab.Name = 'Tab'
-        Tab.Size = UDim2.new(0, 129, 0, 32)
+        Tab.Size = UDim2.new(0, 129, 0, 30)
         Tab.BorderSizePixel = 0
         Tab.TextSize = 14
         Tab.BackgroundColor3 = Theme.Panel
@@ -1576,21 +1958,34 @@ function Library:create_ui()
         TabBar.BorderColor3 = Color3.fromRGB(0, 0, 0)
         TabBar.AnchorPoint = Vector2.new(0, 0.5)
         TabBar.BackgroundTransparency = 1
-        TabBar.Position = UDim2.new(0, 12, 0.5, 0)
-        TabBar.Size = UDim2.new(0, 2, 0, 20)
+        TabBar.Position = UDim2.new(0, 4, 0.5, 0)
+        TabBar.Size = UDim2.new(0, 2, 0, 18)
         TabBar.BorderSizePixel = 0
         TabBar.BackgroundColor3 = accent()
         TabBar.ZIndex = 2
         TabBar.Parent = Tab
+
+        local Icon = Instance.new('ImageLabel')
+        Icon.Name = 'Icon'
+        Icon.ScaleType = Enum.ScaleType.Fit
+        Icon.Image = icon_id or ''
+        Icon.ImageColor3 = Theme.TextDim
+        Icon.ImageTransparency = 0.45
+        Icon.AnchorPoint = Vector2.new(0, 0.5)
+        Icon.Position = UDim2.new(0, 16, 0.5, 0)
+        Icon.Size = UDim2.fromOffset(14, 14)
+        Icon.BackgroundTransparency = 1
+        Icon.BorderSizePixel = 0
+        Icon.Parent = Tab
         
         local TextLabel = Instance.new('TextLabel')
         TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
         TextLabel.TextColor3 = Theme.TextDim
-        TextLabel.TextTransparency = 0.55
+        TextLabel.TextTransparency = 0.45
         TextLabel.Text = title
         TextLabel.Size = UDim2.new(0, font_size.X, 0, 16)
         TextLabel.AnchorPoint = Vector2.new(0, 0.5)
-        TextLabel.Position = UDim2.new(0, 14, 0.5, 0)
+        TextLabel.Position = UDim2.new(0, 36, 0.5, 0)
         TextLabel.BackgroundTransparency = 1
         TextLabel.TextXAlignment = Enum.TextXAlignment.Left
         TextLabel.BorderSizePixel = 0
@@ -1598,6 +1993,11 @@ function Library:create_ui()
         TextLabel.TextSize = 13
         TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         TextLabel.Parent = Tab
+
+        -- The focused tab carries the same top-to-bottom grey gradient as
+        -- the cards. Hovering only brightens text; it never shows the card.
+        local TabFace = addCardFace(Tab, 'TabFace', 6)
+        TabFace.Visible = false
 
         local LeftSection = Instance.new('ScrollingFrame')
         LeftSection.Name = 'LeftSection'
@@ -1665,6 +2065,31 @@ function Library:create_ui()
             self:update_sections(LeftSection, RightSection)
         end)
 
+        Tab.MouseEnter:Connect(function()
+            local info = TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+            TweenService:Create(TextLabel, info, {
+                TextColor3 = Theme.Text,
+                TextTransparency = 0.08
+            }):Play()
+            TweenService:Create(Icon, info, {
+                ImageColor3 = Theme.Text,
+                ImageTransparency = 0.08
+            }):Play()
+        end)
+
+        Tab.MouseLeave:Connect(function()
+            local active = Tab.BackgroundTransparency < 1
+            local info = TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+            TweenService:Create(TextLabel, info, {
+                TextColor3 = active and Theme.Text or Theme.TextDim,
+                TextTransparency = active and 0.05 or 0.45
+            }):Play()
+            TweenService:Create(Icon, info, {
+                ImageColor3 = active and Theme.Text or Theme.TextDim,
+                ImageTransparency = active and 0.1 or 0.45
+            }):Play()
+        end)
+
         function TabManager:create_module(settings: any)
 
             local LayoutOrderModule = 0;
@@ -1672,7 +2097,10 @@ function Library:create_ui()
             local ModuleManager = {
                 _state = false,
                 _size = 0,
-                _multiplier = 0
+                _multiplier = 0,
+                _no_toggle = settings.notoggle == true or settings.Module_NoToggle == true,
+                _module_rebind = settings.Module_Rebind,
+                _content_rebind = settings.Module_ContentRebind
             }
 
             if settings.section == 'right' then
@@ -1684,13 +2112,18 @@ function Library:create_ui()
             local Module = Instance.new('Frame')
             Module.ClipsDescendants = true
             Module.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            Module.BackgroundTransparency = 0.12
+            Module.BackgroundTransparency = 0
             Module.Position = UDim2.new(0.004115226212888956, 0, 0, 0)
             Module.Name = 'Module'
             Module.Size = UDim2.new(0, 241, 0, 93)
             Module.BorderSizePixel = 0
-            Module.BackgroundColor3 = Theme.Panel
+            Module.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
             Module.Parent = settings.section
+
+            if self._modules then
+                table.insert(self._modules, { object = Module, title = settings.title or '' })
+            end
+
 
             local UIListLayout = Instance.new('UIListLayout')
             UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -1701,8 +2134,8 @@ function Library:create_ui()
             UICorner.Parent = Module
             
             local UIStroke = Instance.new('UIStroke')
-            UIStroke.Color = Accent.BaseColor
-            UIStroke.Transparency = 0.2
+            UIStroke.Color = Color3.new(1, 1, 1)
+            UIStroke.Transparency = 0.9
             UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             UIStroke.Parent = Module
             
@@ -1720,8 +2153,27 @@ function Library:create_ui()
             Header.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Header.Parent = Module
 
-            createAccentLine(Header, UDim2.new(0, 0, 0, 2), 241, 'ModuleSweep')
-            
+            addModuleFace(Header, 'CardFace')
+
+            -- Static gradient strip along the card's top edge. Only the
+            -- window's outer border animates; card borders never move.
+            local EdgeStrip = Instance.new('Frame')
+            EdgeStrip.Name = 'EdgeStrip'
+            EdgeStrip.Size = UDim2.new(1, 0, 0, 1)
+            EdgeStrip.Position = UDim2.new(0, 0, 0, 0)
+            EdgeStrip.BorderSizePixel = 0
+            EdgeStrip.ZIndex = 3
+            EdgeStrip.Parent = Header
+
+            local EdgeGradient = Instance.new('UIGradient')
+            EdgeGradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0, 0, 0))
+            EdgeGradient.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(0.5, 0.45),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+            EdgeGradient.Parent = EdgeStrip
+
             local ModuleName = Instance.new('TextLabel')
             ModuleName.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
             ModuleName.TextColor3 = accent()
@@ -1730,7 +2182,7 @@ function Library:create_ui()
                 ModuleName.Text = settings.title or "Skibidi"
             else
                 ModuleName.RichText = true
-                ModuleName.Text = settings.richtext or "<font color='rgb(255,0,0)'>March</font> user"
+                ModuleName.Text = settings.richtext or "<font color='rgb(255,0,0)'>Norepine</font> user"
             end;
             ModuleName.Name = 'ModuleName'
             ModuleName.Size = UDim2.new(0, 205, 0, 13)
@@ -1746,8 +2198,8 @@ function Library:create_ui()
             
             local Description = Instance.new('TextLabel')
             Description.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-            Description.TextColor3 = accent()
-            Description.TextTransparency = 0.699999988079071
+            Description.TextColor3 = Theme.TextBody
+            Description.TextTransparency = 0.35
             Description.Text = settings.description
             Description.Name = 'Description'
             Description.Size = UDim2.new(0, 205, 0, 13)
@@ -1757,7 +2209,7 @@ function Library:create_ui()
             Description.TextXAlignment = Enum.TextXAlignment.Left
             Description.BorderSizePixel = 0
             Description.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            Description.TextSize = 10
+            Description.TextSize = 12
             Description.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Description.Parent = Header
             
@@ -1769,6 +2221,7 @@ function Library:create_ui()
             Toggle.Size = UDim2.fromOffset(30, 16)
             Toggle.BorderSizePixel = 0
             Toggle.BackgroundColor3 = Theme.Track
+            Toggle.Visible = not ModuleManager._no_toggle
             Toggle.Parent = Header
             
             local UICorner = Instance.new('UICorner')
@@ -1790,51 +2243,51 @@ function Library:create_ui()
             UICorner.CornerRadius = UDim.new(1, 0)
             UICorner.Parent = Circle
             
-            local Keybind = Instance.new('Frame')
+            local Keybind = makeRebindChip(Header, '-')
             Keybind.Name = 'Keybind'
-            Keybind.BackgroundTransparency = 0.699999988079071
-            Keybind.Position = UDim2.new(0.15000000596046448, 0, 0.7350000143051147, 0)
-            Keybind.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            Keybind.Size = UDim2.new(0, 33, 0, 15)
-            Keybind.BorderSizePixel = 0
-            Keybind.BackgroundColor3 = accent()
-            Keybind.Parent = Header
-            
-            local UICorner = Instance.new('UICorner')
-            UICorner.CornerRadius = UDim.new(0, 3)
-            UICorner.Parent = Keybind
-            
-            local TextLabel = Instance.new('TextLabel')
-            TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-            TextLabel.TextColor3 = accent()
-            TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            TextLabel.Text = 'None'
-            TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-            TextLabel.Size = UDim2.new(0, 25, 0, 13)
-            TextLabel.BackgroundTransparency = 1
-            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-            TextLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-            TextLabel.BorderSizePixel = 0
-            TextLabel.TextSize = 10
-            TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            TextLabel.Parent = Keybind
+            Keybind.Position = UDim2.fromOffset(17, 68)
+            Keybind.ZIndex = 2
+            Keybind.Visible = ModuleManager._module_rebind ~= false
+            local TextLabel = Keybind
+
+            -- Notification bell (on by default). Every state change of this
+            -- module sends a Norepine-style toast only while this is enabled.
+            local notifyFlag = settings.flag .. '_notify'
+            if Library._config._flags[notifyFlag] == nil then
+                Library._config._flags[notifyFlag] = true
+            end
+            ModuleManager._notify = Library._config._flags[notifyFlag] ~= false
+
+            local NotifyBell = Instance.new('ImageButton')
+            NotifyBell.Name = 'NotifyBell'
+            NotifyBell.Image = ICONS.Bell
+            NotifyBell.Visible = not ModuleManager._no_toggle
+            NotifyBell.ImageColor3 = Theme.TextBody
+            NotifyBell.ImageTransparency = ModuleManager._notify and 0.3 or 0.7
+            NotifyBell.Size = UDim2.fromOffset(14, 14)
+            NotifyBell.Position = UDim2.fromOffset(170, 69)
+            NotifyBell.BackgroundTransparency = 1
+            NotifyBell.AutoButtonColor = false
+            NotifyBell.Parent = Header
+
+            NotifyBell.MouseButton1Click:Connect(function()
+                ModuleManager._notify = not ModuleManager._notify
+                Library._config._flags[notifyFlag] = ModuleManager._notify
+                Config:save(game.GameId, Library._config)
+                NotifyBell.ImageColor3 = Theme.TextBody
+                NotifyBell.ImageTransparency = ModuleManager._notify and 0.3 or 0.7
+                Library.SendNotification({
+                    title = 'Notifications',
+                    text = tostring(settings.title) .. ': ' .. (ModuleManager._notify and 'on' or 'off'),
+                    kind = ModuleManager._notify and 'check' or 'x'
+                })
+            end)
             
             local Divider = Instance.new('Frame')
             Divider.BorderColor3 = Color3.fromRGB(0, 0, 0)
             Divider.AnchorPoint = Vector2.new(0.5, 0)
             Divider.BackgroundTransparency = 0.5
             Divider.Position = UDim2.new(0.5, 0, 0.6200000047683716, 0)
-            Divider.Name = 'Divider'
-            Divider.Size = UDim2.new(0, 241, 0, 1)
-            Divider.BorderSizePixel = 0
-            Divider.BackgroundColor3 = Accent.BaseColor
-            Divider.Parent = Header
-            
-            local Divider = Instance.new('Frame')
-            Divider.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            Divider.AnchorPoint = Vector2.new(0.5, 0)
-            Divider.BackgroundTransparency = 0.5
-            Divider.Position = UDim2.new(0.5, 0, 1, 0)
             Divider.Name = 'Divider'
             Divider.Size = UDim2.new(0, 241, 0, 1)
             Divider.BorderSizePixel = 0
@@ -1861,7 +2314,32 @@ function Library:create_ui()
             UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
             UIListLayout.Parent = Options
 
+            -- Public runtime setters (used by the global API).
+            function ModuleManager:_set_no_toggle(state)
+                self._no_toggle = state == true
+                Toggle.Visible = not self._no_toggle
+                NotifyBell.Visible = not self._no_toggle
+                if self._no_toggle then
+                    self._state = true
+                    Module.Size = UDim2.fromOffset(241, 93 + self._size + self._multiplier)
+                end
+            end
+            function ModuleManager:_set_module_rebind(state)
+                self._module_rebind = state ~= false
+                Keybind.Visible = self._module_rebind
+            end
+            function ModuleManager:_set_content_rebind(state)
+                self._content_rebind = state ~= false
+                for _, chip in ipairs(Module:GetDescendants()) do
+                    if chip.Name == 'KeybindBox' then chip.Visible = self._content_rebind end
+                end
+            end
+
             function ModuleManager:change_state(state: boolean)
+                -- no-toggle modules are always open and never flip state.
+                if self._no_toggle then
+                    state = true
+                end
                 self._state = state
 
                 if self._state then
@@ -1895,6 +2373,15 @@ function Library:create_ui()
                 Library._config._flags[settings.flag] = self._state
                 Config:save(game.GameId, Library._config)
 
+                if self._notify then
+                    Library.SendNotification({
+                        title = tostring(settings.title),
+                        text = tostring(settings.title) .. ' is ' .. (state and 'enabled' or 'disabled') .. '.',
+                        state = state,
+                        duration = 3
+                    })
+                end
+
                 settings.callback(self._state)
             end
             
@@ -1918,7 +2405,7 @@ function Library:create_ui()
 
             function ModuleManager:scale_keybind(empty: boolean)
                 if Library._config._keybinds[settings.flag] and not empty then
-                    local keybind_string = string.gsub(tostring(Library._config._keybinds[settings.flag]), 'Enum.KeyCode.', '')
+                    local keybind_string = keyName(tostring(Library._config._keybinds[settings.flag]))
 
                     local font_params = Instance.new('GetTextBoundsParams')
                     font_params.Text = keybind_string
@@ -1928,15 +2415,17 @@ function Library:create_ui()
             
                     local font_size = TextService:GetTextBoundsAsync(font_params)
                     
-                    Keybind.Size = UDim2.fromOffset(font_size.X + 6, 15)
-                    TextLabel.Size = UDim2.fromOffset(font_size.X, 13)
+                    TextLabel.Text = keyName(Library._config._keybinds[settings.flag])
                 else
-                    Keybind.Size = UDim2.fromOffset(31, 15)
-                    TextLabel.Size = UDim2.fromOffset(25, 13)
+                    TextLabel.Text = '-'
                 end
             end
 
-            if Library:flag_type(settings.flag, 'boolean') then
+            if ModuleManager._no_toggle then
+                ModuleManager._state = true
+                -- Expand after content is added via change_state; here _size is still 0.
+                settings.callback(true)
+            elseif Library:flag_type(settings.flag, 'boolean') then
                 ModuleManager._state = true
                 settings.callback(ModuleManager._state)
 
@@ -1946,7 +2435,7 @@ function Library:create_ui()
             end
 
             if Library._config._keybinds[settings.flag] then
-                local keybind_string = string.gsub(tostring(Library._config._keybinds[settings.flag]), 'Enum.KeyCode.', '')
+                local keybind_string = keyName(tostring(Library._config._keybinds[settings.flag]))
                 TextLabel.Text = keybind_string
 
                 ModuleManager:connect_keybind()
@@ -1958,7 +2447,16 @@ function Library:create_ui()
                     return
                 end
 
-                if input.UserInputType ~= Enum.UserInputType.MouseButton3 then
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+                    return
+                end
+
+                -- Only the keybind pill starts a capture; the rest of the
+                -- header keeps its normal left-click toggle.
+                local ap, as, p = Keybind.AbsolutePosition, Keybind.AbsoluteSize, input.Position
+                if not Keybind.Visible
+                    or p.X < ap.X or p.X > ap.X + as.X
+                    or p.Y < ap.Y or p.Y > ap.Y + as.Y then
                     return
                 end
                 
@@ -1983,7 +2481,7 @@ function Library:create_ui()
                         Library._config._keybinds[settings.flag] = nil
                         Config:save(game.GameId, Library._config)
 
-                        TextLabel.Text = 'None'
+                        TextLabel.Text = '-'
                         
                         if Connections[settings.flag..'_keybind'] then
                             Connections[settings.flag..'_keybind']:Disconnect()
@@ -2014,12 +2512,13 @@ function Library:create_ui()
                     
                     Library._choosing_keybind = false
 
-                    local keybind_string = string.gsub(tostring(Library._config._keybinds[settings.flag]), 'Enum.KeyCode.', '')
+                    local keybind_string = keyName(tostring(Library._config._keybinds[settings.flag]))
                     TextLabel.Text = keybind_string
                 end)
             end)
 
             Header.MouseButton1Click:Connect(function()
+                if Library._choosing_keybind then return end
                 ModuleManager:change_state(not ModuleManager._state)
             end)
 
@@ -2078,7 +2577,7 @@ function Library:create_ui()
                     Body.Text = settings.text or "Skibidi"
                 else
                     Body.RichText = true
-                    Body.Text = settings.richtext or "<font color='rgb(255,0,0)'>March</font> user"
+                    Body.Text = settings.richtext or "<font color='rgb(255,0,0)'>Norepine</font> user"
                 end
                 
                 Body.Size = UDim2.new(1, -10, 0, 20)
@@ -2148,7 +2647,7 @@ function Library:create_ui()
                     Body.Text = settings.text or "Skibidi" -- Default text
                 else
                     Body.RichText = true
-                    Body.Text = settings.richtext or "<font color='rgb(255,0,0)'>March</font> user" -- Default rich text
+                    Body.Text = settings.richtext or "<font color='rgb(255,0,0)'>Norepine</font> user" -- Default rich text
                 end
             
                 Body.Size = UDim2.new(1, -10, 1, 0)
@@ -2179,7 +2678,7 @@ function Library:create_ui()
                         Body.Text = new_settings.text or "Skibidi" -- Default text
                     else
                         Body.RichText = true
-                        Body.Text = new_settings.richtext or "<font color='rgb(255,0,0)'>March</font> user" -- Default rich text
+                        Body.Text = new_settings.richtext or "<font color='rgb(255,0,0)'>Norepine</font> user" -- Default rich text
                     end
                 end;
             
@@ -2206,7 +2705,7 @@ function Library:create_ui()
             
                 local Label = Instance.new('TextLabel')
                 Label.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-                Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Label.TextColor3 = Theme.Text
                 Label.TextTransparency = 0.2
                 Label.Text = settings.title or "Enter text"
                 Label.Size = UDim2.new(0, 207, 0, 13)
@@ -2216,12 +2715,12 @@ function Library:create_ui()
                 Label.TextXAlignment = Enum.TextXAlignment.Left
                 Label.BorderSizePixel = 0
                 Label.Parent = Options
-                Label.TextSize = 10;
+                Label.TextSize = 12;
                 Label.LayoutOrder = LayoutOrderModule
             
                 local Textbox = Instance.new('TextBox')
                 Textbox.FontFace = Font.new('rbxasset://fonts/families/SourceSansPro.json', Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-                Textbox.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Textbox.TextColor3 = Theme.Text
                 Textbox.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Textbox.PlaceholderText = settings.placeholder or "Enter text..."
                 Textbox.Text = Library._config._flags[settings.flag] or ""
@@ -2292,10 +2791,10 @@ function Library:create_ui()
                     TitleLabel.FontFace = Font.new("rbxasset://fonts/families/NotoSansThai.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
                     TitleLabel.TextSize = 13
                 else
-                    TitleLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-                    TitleLabel.TextSize = 11
+                    TitleLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+                    TitleLabel.TextSize = 13
                 end
-                TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                TitleLabel.TextColor3 = Theme.Text
                 TitleLabel.TextTransparency = 0.2
                 TitleLabel.Text = settings.title or "Skibidi"
                 TitleLabel.Size = UDim2.new(0, 142, 0, 13)
@@ -2305,36 +2804,19 @@ function Library:create_ui()
                 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
                 TitleLabel.Parent = Checkbox
 
-                local KeybindBox = Instance.new("Frame")
+                local KeybindBox = makeRebindChip(Checkbox,
+                    Library._config._keybinds[settings.flag] and keyName(Library._config._keybinds[settings.flag]) or "-")
                 KeybindBox.Name = "KeybindBox"
-                KeybindBox.Size = UDim2.fromOffset(14, 14)
-                KeybindBox.Position = UDim2.new(1, -35, 0.5, 0)
-                KeybindBox.AnchorPoint = Vector2.new(0, 0.5)
-                KeybindBox.BackgroundColor3 = accent()
-                KeybindBox.BorderSizePixel = 0
-                KeybindBox.Parent = Checkbox
-            
-                local KeybindCorner = Instance.new("UICorner")
-                KeybindCorner.CornerRadius = UDim.new(0, 4)
-                KeybindCorner.Parent = KeybindBox
-            
-                local KeybindLabel = Instance.new("TextLabel")
-                KeybindLabel.Name = "KeybindLabel"
-                KeybindLabel.Size = UDim2.new(1, 0, 1, 0)
-                KeybindLabel.BackgroundTransparency = 1
-                KeybindLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-                KeybindLabel.TextScaled = false
-                KeybindLabel.TextSize = 10
-                KeybindLabel.Font = Enum.Font.SourceSans
-                KeybindLabel.Text = Library._config._keybinds[settings.flag] 
-                    and string.gsub(tostring(Library._config._keybinds[settings.flag]), "Enum.KeyCode.", "") 
-                    or "..."
-                KeybindLabel.Parent = KeybindBox
+                KeybindBox.AnchorPoint = Vector2.new(1, 0.5)
+                KeybindBox.Position = UDim2.new(1, -36, 0.5, 0)
+                KeybindBox.ZIndex = 2
+                KeybindBox.Visible = ModuleManager._content_rebind ~= false
+                local KeybindLabel = KeybindBox
             
                 local Box = Instance.new("Frame")
                 Box.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Box.AnchorPoint = Vector2.new(1, 0.5)
-                Box.BackgroundTransparency = 0.9
+                Box.BackgroundTransparency = 0.1
                 Box.Position = UDim2.new(1, 0, 0.5, 0)
                 Box.Name = "Box"
                 Box.Size = UDim2.fromOffset(30, 16)
@@ -2392,13 +2874,20 @@ function Library:create_ui()
                 end
             
                 Checkbox.MouseButton1Click:Connect(function()
+                    if Library._choosing_keybind then return end
                     CheckboxManager:change_state(not CheckboxManager._state)
                 end)
             
                 Checkbox.InputBegan:Connect(function(input, gameProcessed)
                     if gameProcessed then return end
-                    if input.UserInputType ~= Enum.UserInputType.MouseButton3 then return end
+                    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
                     if Library._choosing_keybind then return end
+                    local ap, as, p = KeybindBox.AbsolutePosition, KeybindBox.AbsoluteSize, input.Position
+                    if not KeybindBox.Visible
+                        or p.X < ap.X or p.X > ap.X + as.X
+                        or p.Y < ap.Y or p.Y > ap.Y + as.Y then
+                        return
+                    end
             
                     Library._choosing_keybind = true
                     local chooseConnection
@@ -2411,7 +2900,7 @@ function Library:create_ui()
                             ModuleManager:scale_keybind(true)
                             Library._config._keybinds[settings.flag] = nil
                             Config:save(game.GameId, Library._config)
-                            KeybindLabel.Text = "..."
+                            KeybindLabel.Text = "-"
                             if Connections[settings.flag .. "_keybind"] then
                                 Connections[settings.flag .. "_keybind"]:Disconnect()
                                 Connections[settings.flag .. "_keybind"] = nil
@@ -2432,7 +2921,7 @@ function Library:create_ui()
                         ModuleManager:scale_keybind()
                         Library._choosing_keybind = false
             
-                        local keybind_string = string.gsub(tostring(Library._config._keybinds[settings.flag]), "Enum.KeyCode.", "")
+                        local keybind_string = keyName(tostring(Library._config._keybinds[settings.flag]))
                         KeybindLabel.Text = keybind_string
                     end)
                 end)
@@ -2479,7 +2968,7 @@ function Library:create_ui()
                 if settings and settings.showtopic then
                     local TextLabel = Instance.new('TextLabel')
                     TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-                    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- 154, 182, 255
+                    TextLabel.TextColor3 = Theme.Text -- 154, 182, 255
                     TextLabel.TextTransparency = 0
                     TextLabel.Text = settings.title
                     TextLabel.Size = UDim2.new(0, 153, 0, 13)
@@ -2573,7 +3062,7 @@ function Library:create_ui()
                     TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
                     TextLabel.TextSize = 11;
                 end;
-                TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                TextLabel.TextColor3 = Theme.Text
                 TextLabel.TextTransparency = 0.20000000298023224
                 TextLabel.Text = settings.title
                 TextLabel.Size = UDim2.new(0, 153, 0, 13)
@@ -2638,7 +3127,7 @@ function Library:create_ui()
                 
                 local Value = Instance.new('TextLabel')
                 Value.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-                Value.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Value.TextColor3 = Theme.Text
                 Value.TextTransparency = 0.20000000298023224
                 Value.Text = '50'
                 Value.Name = 'Value'
@@ -2734,6 +3223,12 @@ function Library:create_ui()
                     _size = 0
                 }
 
+                local notifyFlag = settings.flag .. '_notify'
+                if Library._config._flags[notifyFlag] == nil then
+                    Library._config._flags[notifyFlag] = false
+                end
+                DropdownManager._notify = Library._config._flags[notifyFlag] == true
+
                 if not settings.Order then
                     if self._size == 0 then
                         self._size = 11
@@ -2781,17 +3276,35 @@ function Library:create_ui()
                     TextLabel.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal);
                     TextLabel.TextSize = 11;
                 end;
-                TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                TextLabel.TextColor3 = Theme.Text
                 TextLabel.TextTransparency = 0.20000000298023224
                 TextLabel.Text = settings.title
-                TextLabel.Size = UDim2.new(0, 207, 0, 13)
+                TextLabel.Size = UDim2.new(0, 190, 0, 13)
                 TextLabel.BackgroundTransparency = 1
                 TextLabel.TextXAlignment = Enum.TextXAlignment.Left
                 TextLabel.BorderSizePixel = 0
                 TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 TextLabel.Parent = Dropdown
-                
+
+                local NotifyBell = Instance.new('ImageButton')
+                NotifyBell.Name = 'NotifyBell'
+                NotifyBell.Image = ICONS.Bell
+                NotifyBell.ImageColor3 = DropdownManager._notify and accent() or Theme.TextDim
+                NotifyBell.ImageTransparency = DropdownManager._notify and 0 or 0.5
+                NotifyBell.Size = UDim2.fromOffset(12, 12)
+                NotifyBell.Position = UDim2.fromOffset(195, 0)
+                NotifyBell.BackgroundTransparency = 1
+                NotifyBell.AutoButtonColor = false
+                NotifyBell.Parent = Dropdown
+                NotifyBell.MouseButton1Click:Connect(function()
+                    DropdownManager._notify = not DropdownManager._notify
+                    Library._config._flags[notifyFlag] = DropdownManager._notify
+                    Config:save(game.GameId, Library._config)
+                    NotifyBell.ImageColor3 = DropdownManager._notify and accent() or Theme.TextDim
+                    NotifyBell.ImageTransparency = DropdownManager._notify and 0 or 0.5
+                end)
+
                 local Box = Instance.new('Frame')
                 Box.ClipsDescendants = true
                 Box.BorderColor3 = Color3.fromRGB(0, 0, 0)
@@ -2821,7 +3334,7 @@ function Library:create_ui()
                 
                 local CurrentOption = Instance.new('TextLabel')
                 CurrentOption.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
-                CurrentOption.TextColor3 = Color3.fromRGB(255, 255, 255)
+                CurrentOption.TextColor3 = Theme.Text
                 CurrentOption.TextTransparency = 0.20000000298023224
                 CurrentOption.Name = 'CurrentOption'
                 CurrentOption.Size = UDim2.new(0, 161, 0, 13)
@@ -2831,7 +3344,7 @@ function Library:create_ui()
                 CurrentOption.TextXAlignment = Enum.TextXAlignment.Left
                 CurrentOption.BorderSizePixel = 0
                 CurrentOption.BorderColor3 = Color3.fromRGB(0, 0, 0)
-                CurrentOption.TextSize = 10
+                CurrentOption.TextSize = 12
                 CurrentOption.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 CurrentOption.Parent = Header
                 local UIGradient = Instance.new('UIGradient')
@@ -2846,7 +3359,7 @@ function Library:create_ui()
                 local Arrow = Instance.new('ImageLabel')
                 Arrow.BorderColor3 = Color3.fromRGB(0, 0, 0)
                 Arrow.AnchorPoint = Vector2.new(0, 0.5)
-                Arrow.Image = 'https://raw.githubusercontent.com/thecoolersyn/mainui/main/assets/dropdown.png'
+                Arrow.Image = 'rbxassetid://7733717447'
                 Arrow.BackgroundTransparency = 1
                 Arrow.Position = UDim2.new(0.9100000262260437, 0, 0.5, 0)
                 Arrow.Name = 'Arrow'
@@ -2985,6 +3498,16 @@ function Library:create_ui()
                 
                     -- Save the configuration state
                     Config:save(game.GameId, Library._config)
+
+                    if DropdownManager._notify then
+                        local label = (typeof(option) == "string" and option) or (option and option.Name) or tostring(option)
+                        Library.SendNotification({
+                            title = tostring(settings.title),
+                            text = label,
+                            kind = "bell",
+                            duration = 3
+                        })
+                    end
                 
                     -- Callback with the updated option(s)
                     settings.callback(option)
@@ -3055,9 +3578,9 @@ function Library:create_ui()
                         Option.Active = false
                         Option.TextTransparency = 0.6000000238418579
                         Option.AnchorPoint = Vector2.new(0, 0.5)
-                        Option.TextSize = 10
+                        Option.TextSize = 12
                         Option.Size = UDim2.new(0, 186, 0, 16)
-                        Option.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        Option.TextColor3 = Theme.Text
                         Option.BorderColor3 = Color3.fromRGB(0, 0, 0)
                         Option.Text = (typeof(value) == "string" and value) or value.Name;
                         Option.AutoButtonColor = false
@@ -3156,17 +3679,17 @@ function Library:create_ui()
                 local FeatureButton = Instance.new("TextButton")
                 FeatureButton.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal);
                 FeatureButton.TextSize = 11;
-                FeatureButton.Size = UDim2.new(1, -35, 0, 16)
-                FeatureButton.BackgroundColor3 = Theme.Panel
+                FeatureButton.Size = UDim2.new(1, -95, 0, 16)
+                FeatureButton.BackgroundTransparency = 1
                 FeatureButton.TextColor3 = Theme.TextSoft
-                FeatureButton.Text = "    " .. settings.title or "    " .. "Feature"
+                FeatureButton.Text = settings.title or "Feature"
                 FeatureButton.AutoButtonColor = false
                 FeatureButton.TextXAlignment = Enum.TextXAlignment.Left
                 FeatureButton.TextTransparency = 0.2
                 FeatureButton.Parent = FeatureContainer
             
                 local RightContainer = Instance.new("Frame")
-                RightContainer.Size = UDim2.new(0, 45, 0, 16)
+                RightContainer.Size = UDim2.new(0, 90, 0, 16)
                 RightContainer.BackgroundTransparency = 1
                 RightContainer.Parent = FeatureContainer
             
@@ -3177,29 +3700,15 @@ function Library:create_ui()
                 RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 RightLayout.Parent = RightContainer
             
-                local KeybindBox = Instance.new("TextLabel")
-                KeybindBox.FontFace = Font.new('rbxasset://fonts/families/GothamSSm.json', Enum.FontWeight.SemiBold, Enum.FontStyle.Normal);
-                KeybindBox.Size = UDim2.new(0, 15, 0, 15)
-                KeybindBox.BackgroundColor3 = accent()
-                KeybindBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-                KeybindBox.TextSize = 11
-                KeybindBox.BackgroundTransparency = 1
-                KeybindBox.LayoutOrder = 2;
-                KeybindBox.Parent = RightContainer
-            
+                local KeybindBox = makeRebindChip(RightContainer, "-")
+                KeybindBox.LayoutOrder = 2
+
                 local KeybindButton = Instance.new("TextButton")
                 KeybindButton.Size = UDim2.new(1, 0, 1, 0)
                 KeybindButton.BackgroundTransparency = 1
                 KeybindButton.TextTransparency = 1
+                KeybindButton.Text = ""
                 KeybindButton.Parent = KeybindBox
-
-                local CheckboxCorner = Instance.new("UICorner", KeybindBox)
-                CheckboxCorner.CornerRadius = UDim.new(0, 3)
-
-                local UIStroke = Instance.new("UIStroke", KeybindBox)
-                UIStroke.Color = accent()
-                UIStroke.Thickness = 1
-                UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             
                 if not Library._config._flags then
                     Library._config._flags = {}
@@ -3213,7 +3722,12 @@ function Library:create_ui()
                 end
             
                 checked = Library._config._flags[settings.flag].checked
-                KeybindBox.Text = Library._config._flags[settings.flag].BIND
+                KeybindBox.Text = keyName(Library._config._flags[settings.flag].BIND)
+
+                if settings.flag == 'z_toggle_key' then
+                    local bound = Library._config._flags[settings.flag].BIND
+                    self._toggle_key = (bound ~= "Unknown" and Enum.KeyCode[bound]) or nil
+                end
 
                 if KeybindBox.Text == "Unknown" then
                     KeybindBox.Text = "...";
@@ -3255,7 +3769,13 @@ function Library:create_ui()
                 else
 
                     UseF_Var = function()
-                        settings.button_callback();
+                        -- The demo's "Toggle key" row drives window visibility.
+                        if settings.flag == 'z_toggle_key' and self.toggle_visibility then
+                            self:toggle_visibility()
+                        end
+                        if settings.button_callback then
+                            settings.button_callback()
+                        end
                     end;
 
                 end;
@@ -3268,12 +3788,15 @@ function Library:create_ui()
                         if input.UserInputType == Enum.UserInputType.Keyboard then
                             local newKey = input.KeyCode.Name
                             Library._config._flags[settings.flag].BIND = newKey
+                            if settings.flag == 'z_toggle_key' then
+                                self._toggle_key = (newKey ~= "Unknown" and Enum.KeyCode[newKey]) or nil
+                            end
                             if newKey ~= "Unknown" then
-                                KeybindBox.Text = newKey;
+                                KeybindBox.Text = keyName(newKey);
                             end;
                             Config:save(game.GameId, Library._config) -- Save new keybind
                             inputConnection:Disconnect()
-                        elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+                        elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
                             Library._config._flags[settings.flag].BIND = "Unknown"
                             KeybindBox.Text = "..."
                             Config:save(game.GameId, Library._config)
@@ -3314,18 +3837,57 @@ function Library:create_ui()
     end
 
     Connections['library_visiblity'] = UserInputService.InputBegan:Connect(function(input: InputObject, process: boolean)
-        if input.KeyCode ~= Enum.KeyCode.Insert then
+        if process then
             return
         end
 
-        self._ui_open = not self._ui_open
-        self:change_visiblity(self._ui_open)
+        if input.KeyCode == Enum.KeyCode.Insert
+            or (self._toggle_key and input.KeyCode == self._toggle_key) then
+            self:toggle_visibility()
+        end
     end)
 
     self._ui.Container.Handler.Minimize.MouseButton1Click:Connect(function()
-        self._ui_open = not self._ui_open
-        self:change_visiblity(self._ui_open)
+        self:toggle_visibility()
     end)
+
+    -- ===================== GLOBAL PUBLIC API ===================== --
+    -- Game name shown next to the brand (the "Blade Ball" text).
+    function self:SetGameName(name: string)
+        SubTitle.Text = tostring(name or '')
+        SubTitle.Visible = self._ui_open and SubTitle.Text ~= ''
+    end
+    function self:GetGameName()
+        return SubTitle.Text
+    end
+
+    -- Expose the three module rebind/toggle controls as simple setters that
+    -- can be called on any ModuleManager returned by create_module().
+    Library.Module_NoToggle = function(module)
+        if not module then return end
+        module._no_toggle = true
+        if module._set_no_toggle then module:_set_no_toggle(true) end
+    end
+    Library.Module_Rebind = function(module, state)
+        if not module then return end
+        module._module_rebind = state ~= false
+        if module._set_module_rebind then module:_set_module_rebind(state) end
+    end
+    Library.Module_ContentRebind = function(module, state)
+        if not module then return end
+        module._content_rebind = state ~= false
+        if module._set_content_rebind then module:_set_content_rebind(state) end
+    end
+
+    getgenv().NOREPINE_UI = self
+    getgenv().NOREPINE_API = {
+        UI = self,
+        SetGameName = function(name) self:SetGameName(name) end,
+        GetGameName = function() return self:GetGameName() end,
+        Module_NoToggle = Library.Module_NoToggle,
+        Module_Rebind = Library.Module_Rebind,
+        Module_ContentRebind = Library.Module_ContentRebind,
+    }
 
     return self
 end

@@ -522,11 +522,13 @@ local function addGlassShimmer(object, name, peak)
     gradient.Parent = shimmer
 
     local phase = math.random()
-    local period = 13 -- slow, calm sweep
+    local period = 18 -- slow, calm cycle
     local function updateGlint()
         local pulse, p = glintPulse(phase, period)
-        -- Drift gently across the surface; smaller range = calmer movement.
-        gradient.Offset = Vector2.new((p - 0.5) * 1.0, 0)
+        -- Sine oscillation: the band drifts one way then eases back the other,
+        -- so there is never a jump when the cycle wraps (no teleporting).
+        local drift = math.sin(p * math.pi * 2) * 0.5
+        gradient.Offset = Vector2.new(drift, 0)
     end
     accentRegister(shimmer, updateGlint)
     task.spawn(function()
